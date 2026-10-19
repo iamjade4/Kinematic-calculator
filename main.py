@@ -75,6 +75,8 @@ def TwoBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2):
     ##Off axis stays the same
     daughter1Angle = np.arctan(vDaughter1OffAxisLab/vDaughter1OnAxisLab)*180/np.pi
     daughter2Angle = np.arctan(vDaughter2OffAxisLab/vDaughter2OnAxisLab)*180/np.pi
+    EkDecay = (vDaughter1OffAxisLab**2 + vDaughter1OnAxisLab**2)/(2*mDaughter1) ##Getting the decay energy of the parent nucleus
+    
     plt.hist(daughter1Angle, bins=180)
     plt.title("Decay Recoil nucleus angles (deg)")
     plt.show()
@@ -82,6 +84,7 @@ def TwoBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2):
     plt.title("Decay Recoil particles angles (deg)")
     plt.show()
     #print("Angles:", daughter1Angle, daughter2Angle)
+    return(EkDecay, daughter1Angle)
     
 def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration): #This will be used for 2n emission
     pLab = np.sqrt(2*mParent*Ek)
@@ -90,21 +93,12 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
     EkCM = Eex + Q
     ##This Emax ONLY works when both of the decay particles are of the same mass.
     Emax = (EkCM)/(mDaughter1/(mDaughter2 + mDaughter3) + 1)
-    EDaughter1 = np.random.rand(1) * Emax
+    EDaughter1 = np.random.rand(1) * Emax ##THIS is the cause of the variation
     pDaughter1 = np.sqrt(2*mDaughter1*EDaughter1)
     # pDaughter23 = - pDaughter1
-    # EDaughter23 = EkCM - EDaughter1 ##I don't need to solve for the neutrons, only the decay nucleus.
+    # EDaughter23 = EkCM - EDaughter1 ##I don't need to solve for the neutrons, only the decay nucleus.    
     if multiAngle == False:
         thetaCM = (np.random.rand(1)-0.5) * 2*np.pi #isotropic angle selection
-        vDaughter1OnAxis = pDaughter1/mDaughter1 * np.cos(thetaCM)
-        vDaughter1OffAxis = pDaughter1/mDaughter1 * np.sin(thetaCM)
-        vDaughter1OnAxisLab = V + vDaughter1OnAxis
-        vDaughter1OffAxisLab = vDaughter1OffAxis
-        
-        pDaughter1Lab = np.sqrt(vDaughter1OffAxisLab**2 + vDaughter1OnAxisLab**2) * mDaughter1
-        EDaughter1Lab = pDaughter1Lab**2/(2*mDaughter1)
-        daughter1AngleBeam = np.arctan(vDaughter1OffAxisLab/vDaughter1OnAxisLab) 
-        daughter1Angle = daughter1AngleBeam + theta
         # if choice != "4":    
         #     print(theta, daughter1Angle, daughter1AngleBeam)
         #     #print(EDaughter1Lab)
@@ -117,19 +111,25 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
         #     plt.show()
     else:
         thetaCM = np.pi/4*iteration
-
-        vDaughter1OnAxis = pDaughter1/mDaughter1 * np.cos(thetaCM)
-        vDaughter1OffAxis = pDaughter1/mDaughter1 * np.sin(thetaCM)
-        vDaughter1OnAxisLab = V + vDaughter1OnAxis
-        vDaughter1OffAxisLab = vDaughter1OffAxis
-            
-        pDaughter1Lab = np.sqrt(vDaughter1OffAxisLab**2 + vDaughter1OnAxisLab**2) * mDaughter1
-        EDaughter1Lab = pDaughter1Lab**2/(2*mDaughter1)
-        daughter1AngleBeam = np.arctan(vDaughter1OffAxisLab/vDaughter1OnAxisLab) 
-        daughter1Angle = daughter1AngleBeam + theta
-            
+    vDaughter1OnAxis = pDaughter1/mDaughter1 * np.cos(thetaCM)
+    vDaughter1OffAxis = pDaughter1/mDaughter1 * np.sin(thetaCM)
+    vDaughter1OnAxisLab = V + vDaughter1OnAxis
+    vDaughter1OffAxisLab = vDaughter1OffAxis
+    
+    pDaughter1Lab = np.sqrt(vDaughter1OffAxisLab**2 + vDaughter1OnAxisLab**2) * mDaughter1
+    EDaughter1Lab = pDaughter1Lab**2/(2*mDaughter1)
+    daughter1AngleBeam = np.arctan(vDaughter1OffAxisLab/vDaughter1OnAxisLab) 
+    daughter1Angle = daughter1AngleBeam + theta
     return(EDaughter1Lab, daughter1Angle)
-        
+
+def ThreeBodyDecayGenerator(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration):
+    EkDecay = np.zeros(10000, 18000)
+    angleDecay = np.zeros(10000, 18000)
+
+    for i in range(10000):
+        EkDecaySingle, angleDecaySingle = ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration)
+        EkDecay[i] = EkDecaySingle
+        angleDecay[i] = angleDecaySingle
     
 def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil, ExEjectile, V): #The two body decay (also valid for general two body scattering) works here since by definition, the total momentum in the CoM frame is 0
     #V is the beam velocity in CoM frame    
