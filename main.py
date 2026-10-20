@@ -86,15 +86,15 @@ def TwoBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2):
     #print("Angles:", daughter1Angle, daughter2Angle)
     return(EkDecay, daughter1Angle)
     
-def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration): #This will be used for 2n emission
+def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration, *args): #This will be used for 2n emission
     pLab = np.sqrt(2*mParent*Ek)
     vLab = np.sqrt(pLab**2/(pLab**2 + mParent**2))
     V = vLab #CoM velocity is just the velocity of the parent nucleus before decay
     EkCM = Eex + Q
+    
     ##This Emax ONLY works when both of the decay particles are of the same mass.
-    Emax = (EkCM)/(mDaughter1/(mDaughter2 + mDaughter3) + 1)
+    Emax = 4*EkCM*(mDaughter2/mDaughter1)/(1+4*mDaughter2/mDaughter1)
     EDaughter1 = np.random.rand(1) * Emax ##THIS is the cause of the variation
-    pDaughter1 = np.sqrt(2*mDaughter1*EDaughter1)
     # pDaughter23 = - pDaughter1
     # EDaughter23 = EkCM - EDaughter1 ##I don't need to solve for the neutrons, only the decay nucleus.    
     if multiAngle == False:
@@ -109,8 +109,13 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
         #     plt.hist(daughter1Angle*180/np.pi, bins=180)
         #     plt.title("Decay Recoil nucleus angles (deg)")
         #     plt.show()
-    else:
+    elif multiAngle == True:
         thetaCM = np.pi/4*iteration
+    if len(args) != 0: #Not really for multiangle, but still using the arg to parse this through
+        i = args[0]
+        EDaughter1 = Emax/1000 * (i) #This will go through energies ranging from 0 to the max number
+    pDaughter1 = np.sqrt(2*mDaughter1*EDaughter1)
+    
     vDaughter1OnAxis = pDaughter1/mDaughter1 * np.cos(thetaCM)
     vDaughter1OffAxis = pDaughter1/mDaughter1 * np.sin(thetaCM)
     vDaughter1OnAxisLab = V + vDaughter1OnAxis
@@ -123,14 +128,15 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
     return(EDaughter1Lab, daughter1Angle)
 
 def ThreeBodyDecayGenerator(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration):
-    EkDecay = np.zeros(10000, 18000)
-    angleDecay = np.zeros(10000, 18000)
+    EkDecay = np.zeros((1000, 18000))
+    angleDecay = np.zeros((1000, 18000))
 
-    for i in range(10000):
-        EkDecaySingle, angleDecaySingle = ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration)
+    for i in range(1000): #Will be running ThreeBodyDecay 10000 times for multiple different energies
+        EkDecaySingle, angleDecaySingle = ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter3, multiAngle, iteration, i)
         EkDecay[i] = EkDecaySingle
         angleDecay[i] = angleDecaySingle
-    
+    return(EkDecay, angleDecay)
+        
 def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil, ExEjectile, V): #The two body decay (also valid for general two body scattering) works here since by definition, the total momentum in the CoM frame is 0
     #V is the beam velocity in CoM frame    
     FinalEk_CM = Ek_CM + Qvalue - ExRecoil - ExEjectile

@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVB
 from PyQt5.QtGui import QIntValidator 
 import pyqtgraph as pg ##will use this when i do nice frontend
 
-from main import ThresholdKineticEnergy, TwoBodyCollision, CentreofMassKineticEnergy, TwoBodyDecay, ThreeBodyDecay
+from main import ThresholdKineticEnergy, TwoBodyCollision, CentreofMassKineticEnergy, TwoBodyDecay, ThreeBodyDecay, ThreeBodyDecayGenerator
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -21,6 +21,7 @@ class MainWindow(QMainWindow):
         self.leftWidget = QWidget()
         self.inputLayout = QVBoxLayout()
         self.leftWidget.setLayout(self.inputLayout)
+        self.showMaximized()
         
         self.rightWidget = QWidget()
         self.graphicLayout = QVBoxLayout()
@@ -33,8 +34,8 @@ class MainWindow(QMainWindow):
         
         #Starting to define the inputs
         
-        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration")
-        self.choiceLabel.setFixedHeight(90)
+        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate Ejectile lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration " + "\n" + "5 Calculate the energy variance")
+        self.choiceLabel.setFixedHeight(120)
         self.inputLayout.addWidget(self.choiceLabel) 
         self.choiceInput = QComboBox()
         self.choiceInput.addItems(["1", "2", "3", "4", "5"])
@@ -74,22 +75,26 @@ class MainWindow(QMainWindow):
     def Choices(self):
         self.choice = self.choiceInput.currentText()
     def Backward(self):
-        if self.graphIndex == 0:
-            print("What are you doing??? Are you crazy? You're going to get us all killed!!")
-        else:
-            self.graphicLayout.removeWidget(self.graph[self.graphIndex])
-            self.graph[self.graphIndex].setParent(None)
-            self.graphIndex -= 1
-            self.graphicLayout.addWidget(self.graph[self.graphIndex])
+        if hasattr(self, 'graphIndex'):
+                
+            if self.graphIndex == 0:
+                print("What are you doing??? Are you crazy? You're going to get us all killed!!")
+            else:
+                self.graphicLayout.removeWidget(self.graph[self.graphIndex])
+                self.graph[self.graphIndex].setParent(None)
+                self.graphIndex -= 1
+                self.graphicLayout.addWidget(self.graph[self.graphIndex])
         
     def Forward(self):
-        if self.graphIndex == (len(self.graph) -1):
-            print("What are you doing??? Are you crazy? You're going to get us all killed!!")
-        else:
-            self.graphicLayout.removeWidget(self.graph[self.graphIndex])
-            self.graph[self.graphIndex].setParent(None)
-            self.graphIndex += 1
-            self.graphicLayout.addWidget(self.graph[self.graphIndex])
+        if hasattr(self, 'graphIndex'):
+            
+            if self.graphIndex == (len(self.graph) -1):
+                print("What are you doing??? Are you crazy? You're going to get us all killed!!")
+            else:
+                self.graphicLayout.removeWidget(self.graph[self.graphIndex])
+                self.graph[self.graphIndex].setParent(None)
+                self.graphIndex += 1
+                self.graphicLayout.addWidget(self.graph[self.graphIndex])
 
     
     def Defaults(self, state):
@@ -128,8 +133,9 @@ class MainWindow(QMainWindow):
             self.graphicLayout.addWidget(self.graph)
             self.plt = self.graph.addPlot(row = 0, col = 0)
             if self.multiAngle == True:
+                self.plt.addLegend()
                 for i in range(len(EkDecay)):
-                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen=self.colours[i])
+                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen=self.colours[i], name=i*45)
                     self.plt.addItem(curve)
             else:
                 curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay)
@@ -145,6 +151,15 @@ class MainWindow(QMainWindow):
             self.ThreeBodyDecaySimInput()
             
         elif self.choice == "5":
+            if hasattr(self, 'graph'):
+                if hasattr(self, 'graphIndex'):
+                    self.graphicLayout.removeWidget(self.graph[self.graphIndex])
+                    for i in range(len(self.graph)):
+                        self.plt[i].clear()
+                        
+                else:
+                    self.graphicLayout.removeWidget(self.graph)
+
             self.EnergyRangeInput()
         else:  
             print("Closing...")
@@ -273,7 +288,7 @@ class MainWindow(QMainWindow):
         EkMin, EkMax, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile = self.collisionArgs
         ## Having two different sets of inputs  
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
-        self.decayDefaults = [85661.69, 939.57, 939.57]
+        self.decayDefaults = [85661.69, 939.57, 939.57] #These are for Nb92, neutron, neutron
         if self.default == 1:
             self.decayArgs = self.decayDefaults
         else:
@@ -289,7 +304,7 @@ class MainWindow(QMainWindow):
                     else:
                         break
                 self.decayArgs[i] = aux
-        mRecoil, mDaughter1, mDaughter2 = self.decayArgs
+        mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
         if hasattr(self, 'graph'):
             if hasattr(self, 'graphIndex'):
                 self.graphicLayout.removeWidget(self.graph[self.graphIndex])
@@ -307,7 +322,7 @@ class MainWindow(QMainWindow):
             EkBeamCM, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(energies, mBeam, mTarget)
             recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V)
             #Multiple energies returned over a uniform CoM angle distribution from TwoBodyCollision
-            EDaughterLab, daughterAngle = ThreeBodyDecay(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mRecoil, mDaughter1, mDaughter2, False, 0)
+            EDaughterLab, daughterAngle = ThreeBodyDecay(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mDecayRecoil, mDaughter1, mDaughter2, False, 0)
             #Just a single decay angle chosen
             curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EDaughterLab) #Plot of the decay nucleus' energy as a function of lab energy
             self.plt.addItem(curve)
@@ -360,20 +375,104 @@ class MainWindow(QMainWindow):
                 self.graph = pg.GraphicsLayoutWidget()
                 self.graphicLayout.addWidget(self.graph)
                 self.plt = self.graph.addPlot(row = 0, col = 0)
-                for i in range(len(energies)):
-                    EkBeamCM, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(energies[i], mBeam, mTarget)
+                for i in range(len(self.energies)):
+                    EkBeamCM, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(self.energies[i], mBeam, mTarget)
                     recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V)
                     #Gets the kinematic information for the (d,p) etc interaction
-                    EdaughterLab, thetaDaughterLab = ThreeBodyDecay(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mRecoil, mDaughter1, mDaughter2, False, 0)
+                    EdaughterLab, thetaDaughterLab = ThreeBodyDecay(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mDecayRecoil, mDaughter1, mDaughter2, False, 0)
                     #Gets the kinematic information for the recoil nucleus' decay based on the outgoing kinematics from the previous collision interaction
                     curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EdaughterLab, pen=self.colours[i])
                     self.plt.addItem(curve)
                 self.plt.setTitle("Decay Recoil energy as a function of ejectile angle")
                 self.plt.setLabel("left", "Decay Recoil Energy /MeV")
                 self.plt.setLabel("bottom", "Ejectile angle /deg")
+    
+    def EnergyRangeInput(self): 
+##This will be for creating
+##1: a set of recoil nucleus energies based on the scattering angle for a single input lab energy and 
+##2: creating a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
+##So it will be a 3 step process of energy ranges
+        self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
+        self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
+        self.collisionDefaults = [2300, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
+        self.decayDefaults = [85661.69, 939.57, 939.57]
+        if self.default == 1:
+            self.collisionArgs = self.collisionDefaults
+            self.decayArgs = self.decayDefaults
+        else:
+            for i in range(len(self.collisionArgs)):
+                aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+                while True:
+                    try:
+                        aux = float(aux)
+                    except ValueError:
+                        aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+                    except TypeError:
+                        aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+                    else:
+                        break
+                self.collisionArgs[i] = aux
             
+            for i in range(len(self.decayArgs)):
+                aux = input("Please input a " + self.decayArgs[i] + " (MeV):")
+                while True:
+                    try:
+                        aux = float(aux)
+                    except ValueError:
+                        aux = input("Please input a " + self.decayArgs[i] + " (MeV):")
+                    except TypeError:
+                        aux = input("Please input a " + self.decayArgs[i] + " (MeV):")
+                    else:
+                        break
+                self.decayArgs[i] = aux
+        EkLab, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile = self.collisionArgs
+        mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
+        EkBeamCM, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) ##Initial EkCM calculation. Array size of 1
+        recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V) #List of energies from two body collision, size 18000
+        ## This bit will be the weird bit
+        EDaughterLab = np.zeros((8, 1000, 18000))
+        daughterAngle = np.zeros((8, 1000, 18000))
+        EMin = np.zeros((8, 18000))
+        EMax = np.zeros((8, 18000))
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graphicLayout.addWidget(self.graph)
+        self.plt = self.graph.addPlot(row = 0, col = 0)
+        for i in range(8): ##going through 8 angles
+            EDaughterLabSingle, daughterAngleSingle = ThreeBodyDecayGenerator(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mRecoil, mDaughter1, mDaughter2, True, i)
+            ##multiAngle argument is set to true regardless of the state of the checkbox
+            ##calls the generator function 8 times, which then calls the three body function 1000 times. Final output of energies will be of shape 8, 1000, 18000
+            ##The first dimension is the standard energy from initial scattering angle array
+            ##The second dimension is for the CoM decay angle
+            ##The Thirs is for a range of CoM decay energies
+            EDaughterLab[i] = EDaughterLabSingle
+            daughterAngle[i] = daughterAngleSingle
+            maxEngIndex = np.argmax(EDaughterLabSingle[:,0])
+            minEngIndex = np.argmin(EDaughterLabSingle[:,0])
+            EMin[i] = EDaughterLabSingle[minEngIndex,:] ##Im gonna be honest i think im just performing magical operations rn
+            EMax[i] = EDaughterLabSingle[maxEngIndex,:]
+        lowestEnergyIndex = np.argmin(EMin[:,0])
+        largestEnergyIndex = np.argmax(EMax[:,0])
+        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen=self.colours[0], name="Lowest Energy")
+        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen=self.colours[1], name="Largest Energy")       
+        median = (EMin[lowestEnergyIndex] + EMax[largestEnergyIndex])/2
+        eDiffBeam = EkLab-median
+        difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen=self.colours[2], name="Beam energy - Median")       
+        Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen=self.colours[3], name="Median Energy")       
         
-                    
+        labEnergy = pg.InfiniteLine(EkLab, angle=0)
+        self.plt.addLegend()
+        self.plt.addItem(Minima)
+        self.plt.addItem(Maxima)
+        self.plt.addItem(Median)
+        self.plt.addItem(labEnergy)
+        energyDifference = EMax[largestEnergyIndex] - EMin[lowestEnergyIndex]
+        variance = pg.PlotCurveItem(thetaEjectile*180/np.pi, energyDifference, pen=self.colours[4], name="Energy Variance")
+        self.plt.addItem(difference)
+        self.plt.addItem(variance)
+        self.plt.setTitle("Energy variance for the decaying nucleus as a function of Ejectile angle")
+        self.plt.setLabel("left", "Energy difference, MeV")
+        self.plt.setLabel("bottom", "Ejectile angle /deg")
+        
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
