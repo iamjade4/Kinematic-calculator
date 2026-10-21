@@ -5,7 +5,7 @@ import random
 import scipy
 import sys
 
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QThread, QTimer, QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QComboBox, QSlider, QLabel, QPushButton, QProgressBar, QCheckBox, QLineEdit, QListWidgetItem, QListWidget, QDialog, QAction, QMenu, QToolBar, QMenuBar, QGridLayout
 from PyQt5.QtGui import QIntValidator 
@@ -22,15 +22,18 @@ class MainWindow(QMainWindow):
         self.inputLayout = QVBoxLayout()
         self.leftWidget.setLayout(self.inputLayout)
         self.showMaximized()
-        
         self.rightWidget = QWidget()
         self.graphicLayout = QVBoxLayout()
         self.rightWidget.setLayout(self.graphicLayout)
+        self.font = QFont()
+        self.font.setPointSize(20)
         
         self.choice = 1 ##Default choice
         self.default = 0
         self.multiAngle = False
-        self.colours = ["Red", "Green", "Blue", "Cyan", "Magenta", "Yellow", "DarkRed", "DarkGreen", "DarkBlue", "DarkCyan", "DarkMagenta", "White", "darkorchid", "chocolate", "cadetblue", "deeppink", "darkviolet"]
+        #self.colours = ["Red", "Green", "Blue", "Cyan", "Magenta", "Yellow", "DarkRed", "DarkGreen", "DarkBlue", "DarkCyan", "DarkMagenta", "turquoise", "darkorchid", "chocolate", "cadetblue", "deeppink", "darkviolet"]
+        self.colours = ["maroon", "red", "darkorange", "goldenrod", "olive", "forestgreen", "darkgreen", "lightseagreen", "teal", "dodgerblue", "blue", "darkslateblue", "indigo", "purple", "crimson", "black"]
+        ## ^Used for when exporting on a white background
         
         #Starting to define the inputs
         
@@ -230,7 +233,7 @@ class MainWindow(QMainWindow):
 
     def LabAngleDistInput(self): #Used for calculating the most common ejectile angle over a range of energies
         self.args = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
-        self.defaults = [800, 2400, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
+        self.defaults = [1000, 2600, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
         if self.default == 1:
             self.args = self.defaults
         else:
@@ -255,16 +258,20 @@ class MainWindow(QMainWindow):
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot(row = 0, col = 0)
+        self.plt.addLegend(offset=(0,80))
         for i in range(len(energies)):
             EkBeamCM, EkTargetCm, EkCM, V = CentreofMassKineticEnergy(energies[i], mBeam, mTarget)
             recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V)
             labAngles[i] = bestLabAngle
-            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, ejectileEk, pen=self.colours[i])
+            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, ejectileEk, pen={'color':self.colours[i], 'width':5}, name=energies[i])
             self.plt.addItem(curve)
         #The outputs are of shape [len(energies), len(angles)] where angles are the uniform distribution in the CoM frame
+
         self.plt.setTitle("Ejectile energy against lab angle for a range of lab energies")
         self.plt.setLabel("left", "Ejectile energy /MeV")
-        self.plt.setLabel("bottom", "Ejectile                 self.viewEnergyDistribution.show()angle /Deg")
+        self.plt.setLabel("bottom", "Ejectile angle /Deg")
+        self.plt.getAxis("bottom").setTickFont(self.font)
+        self.plt.getAxis("left").setTickFont(self.font)
         
     def ThreeBodyDecaySimInput(self): #Going to be used to return a range of energies and momenta for the decay nucleus for a given decay energy
         self.collisionArgs = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
@@ -394,7 +401,7 @@ class MainWindow(QMainWindow):
 ##So it will be a 3 step process of energy ranges
         self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
-        self.collisionDefaults = [2300, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
+        self.collisionDefaults = [2400, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
         self.decayDefaults = [85661.69, 939.57, 939.57]
         if self.default == 1:
             self.collisionArgs = self.collisionDefaults
@@ -452,26 +459,28 @@ class MainWindow(QMainWindow):
             EMax[i] = EDaughterLabSingle[maxEngIndex,:]
         lowestEnergyIndex = np.argmin(EMin[:,0])
         largestEnergyIndex = np.argmax(EMax[:,0])
-        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen=self.colours[0], name="Lowest Energy")
-        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen=self.colours[1], name="Largest Energy")       
+        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen={'color':self.colours[2], 'width':5}, name="Lowest Energy")
+        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen={'color':self.colours[5], 'width':5}, name="Largest Energy")       
         median = (EMin[lowestEnergyIndex] + EMax[largestEnergyIndex])/2
         eDiffBeam = EkLab-median
-        difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen=self.colours[2], name="Beam energy - Median")       
-        Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen=self.colours[3], name="Median Energy")       
+        difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen={'color':self.colours[7], 'width':5}, name="Beam energy - Median")       
+        Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen={'color':self.colours[10], 'width':5}, name="Median Energy")       
         
         labEnergy = pg.InfiniteLine(EkLab, angle=0)
-        self.plt.addLegend()
+        self.plt.addLegend(offset=(0,200))
         self.plt.addItem(Minima)
         self.plt.addItem(Maxima)
         self.plt.addItem(Median)
         self.plt.addItem(labEnergy)
         energyDifference = EMax[largestEnergyIndex] - EMin[lowestEnergyIndex]
-        variance = pg.PlotCurveItem(thetaEjectile*180/np.pi, energyDifference, pen=self.colours[4], name="Energy Variance")
+        variance = pg.PlotCurveItem(thetaEjectile*180/np.pi, energyDifference, pen={'color':self.colours[12], 'width':5}, name="Energy Variance")
         self.plt.addItem(difference)
         self.plt.addItem(variance)
         self.plt.setTitle("Energy variance for the decaying nucleus as a function of Ejectile angle")
-        self.plt.setLabel("left", "Energy difference, MeV")
+        self.plt.setLabel("left", "Energy difference /MeV")
         self.plt.setLabel("bottom", "Ejectile angle /deg")
+        self.plt.getAxis("bottom").setTickFont(self.font)
+        self.plt.getAxis("left").setTickFont(self.font)
         
 app = QApplication(sys.argv)
 window = MainWindow()
