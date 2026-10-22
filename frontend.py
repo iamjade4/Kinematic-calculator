@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         self.choiceLabel.setFixedHeight(120)
         self.inputLayout.addWidget(self.choiceLabel) 
         self.choiceInput = QComboBox()
-        self.choiceInput.addItems(["1", "2", "3", "4", "5"])
+        self.choiceInput.addItems(["1", "2", "3", "4", "5", "6"])
         self.choiceInput.currentTextChanged.connect(self.Choices)
         self.inputLayout.addWidget(self.choiceInput)
         
@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
             if self.multiAngle == True:
                 self.plt.addLegend()
                 for i in range(len(EkDecay)):
-                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen=self.colours[i], name=i*45)
+                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen={'color':self.colours[i], 'width':3}, name=i*45)
                     self.plt.addItem(curve)
             else:
                 curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay)
@@ -146,6 +146,8 @@ class MainWindow(QMainWindow):
             self.plt.setTitle("Recoil nucleus energy as a function of Ejectile's angle")
             self.plt.setLabel("left", "Energy /MeV")
             self.plt.setLabel("bottom", "Angle /deg")
+            self.plt.getAxis("bottom").setTickFont(self.font)
+            self.plt.getAxis("left").setTickFont(self.font)
         elif self.choice == "3":
             self.LabAngleDistInput()
             
@@ -164,6 +166,8 @@ class MainWindow(QMainWindow):
                     self.graphicLayout.removeWidget(self.graph)
 
             self.EnergyRangeInput()
+        elif self.choice == "6":
+            self.MultiExcitationGenerator()
         else:  
             print("Closing...")
     
@@ -263,7 +267,7 @@ class MainWindow(QMainWindow):
             EkBeamCM, EkTargetCm, EkCM, V = CentreofMassKineticEnergy(energies[i], mBeam, mTarget)
             recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V)
             labAngles[i] = bestLabAngle
-            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, ejectileEk, pen={'color':self.colours[i], 'width':5}, name=energies[i])
+            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, ejectileEk, pen={'color':self.colours[i], 'width':3}, name=energies[i])
             self.plt.addItem(curve)
         #The outputs are of shape [len(energies), len(angles)] where angles are the uniform distribution in the CoM frame
 
@@ -359,7 +363,7 @@ class MainWindow(QMainWindow):
                     # ax2.plot(thetaEjectile*180/np.pi, angleDecaySingle, label=('CoM Angle = ', i*45), color=colour[i], linestyle='dashed')
                         self.EdaughterLab[i] = EkDecaySingle
                         self.angleDecay[i] = angleDecaySingle
-                        curve = pg.PlotCurveItem(self.thetaEjectile*180/np.pi, self.EdaughterLab[i], pen=self.colours[i], name=str(i*45)+"Deg")
+                        curve = pg.PlotCurveItem(self.thetaEjectile*180/np.pi, self.EdaughterLab[i], pen={'color':self.colours[i], 'width':3}, name=str(i*45)+"Deg")
                         self.plt[j].addLegend()
                         self.plt[j].addItem(curve)
                     firstVals = self.EdaughterLab[:,0]
@@ -369,6 +373,8 @@ class MainWindow(QMainWindow):
                     self.plt[j].setTitle("Recoil Nucleus energy as a function of ejectile lab angle for multiple Decay angles. Lab energy of: " +  str(self.energies[j]))
                     self.plt[j].setLabel("left", "Energy /MeV")
                     self.plt[j].setLabel("bottom", "Ejectile Angle /deg")
+                    self.plt[j].getAxis("bottom").setTickFont(self.font)
+                    self.plt[j].getAxis("left").setTickFont(self.font)
                 self.graphIndex = 0
                 self.graphicLayout.addWidget(self.graphButtonBackward) ##Adds a button to toggle between graphs
                 self.graphicLayout.addWidget(self.graphButtonForward)
@@ -388,13 +394,15 @@ class MainWindow(QMainWindow):
                     #Gets the kinematic information for the (d,p) etc interaction
                     EdaughterLab, thetaDaughterLab = ThreeBodyDecay(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mDecayRecoil, mDaughter1, mDaughter2, False, 0)
                     #Gets the kinematic information for the recoil nucleus' decay based on the outgoing kinematics from the previous collision interaction
-                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EdaughterLab, pen=self.colours[i])
+                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EdaughterLab, pen={'color':self.colours[i], 'width':3})
                     self.plt.addItem(curve)
                 self.plt.setTitle("Decay Recoil energy as a function of ejectile angle")
                 self.plt.setLabel("left", "Decay Recoil Energy /MeV")
                 self.plt.setLabel("bottom", "Ejectile angle /deg")
+                self.plt.getAxis("bottom").setTickFont(self.font)
+                self.plt.getAxis("left").setTickFont(self.font)
     
-    def EnergyRangeInput(self): 
+    def EnergyRangeInput(self, *args): 
 ##This will be for creating
 ##1: a set of recoil nucleus energies based on the scattering angle for a single input lab energy and 
 ##2: creating a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
@@ -404,6 +412,8 @@ class MainWindow(QMainWindow):
         self.collisionDefaults = [2400, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
         self.decayDefaults = [85661.69, 939.57, 939.57]
         if self.default == 1:
+            if len(args) != 0:
+                self.collisionDefaults[6] = args[0] ##allows for MultiExcitationGenerator to parse through excitations
             self.collisionArgs = self.collisionDefaults
             self.decayArgs = self.decayDefaults
         else:
@@ -459,28 +469,83 @@ class MainWindow(QMainWindow):
             EMax[i] = EDaughterLabSingle[maxEngIndex,:]
         lowestEnergyIndex = np.argmin(EMin[:,0])
         largestEnergyIndex = np.argmax(EMax[:,0])
-        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen={'color':self.colours[2], 'width':5}, name="Lowest Energy")
-        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen={'color':self.colours[5], 'width':5}, name="Largest Energy")       
+        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen={'color':self.colours[2], 'width':3}, name="Lowest Energy")
+        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen={'color':self.colours[5], 'width':3}, name="Largest Energy")       
         median = (EMin[lowestEnergyIndex] + EMax[largestEnergyIndex])/2
         eDiffBeam = EkLab-median
-        difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen={'color':self.colours[7], 'width':5}, name="Beam energy - Median")       
-        Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen={'color':self.colours[10], 'width':5}, name="Median Energy")       
-        
-        labEnergy = pg.InfiniteLine(EkLab, angle=0)
-        self.plt.addLegend(offset=(0,200))
-        self.plt.addItem(Minima)
-        self.plt.addItem(Maxima)
-        self.plt.addItem(Median)
-        self.plt.addItem(labEnergy)
         energyDifference = EMax[largestEnergyIndex] - EMin[lowestEnergyIndex]
-        variance = pg.PlotCurveItem(thetaEjectile*180/np.pi, energyDifference, pen={'color':self.colours[12], 'width':5}, name="Energy Variance")
-        self.plt.addItem(difference)
-        self.plt.addItem(variance)
-        self.plt.setTitle("Energy variance for the decaying nucleus as a function of Ejectile angle")
-        self.plt.setLabel("left", "Energy difference /MeV")
-        self.plt.setLabel("bottom", "Ejectile angle /deg")
+
+        if len(args) == 0:
+            difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen={'color':self.colours[7], 'width':3}, name="Beam energy - Median")       
+            Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen={'color':self.colours[10], 'width':3}, name="Median Energy")       
+            
+            labEnergy = pg.InfiniteLine(EkLab, angle=0, pen={'width':3})
+            self.plt.addLegend(offset=(0,200))
+            self.plt.addItem(Minima)
+            self.plt.addItem(Maxima)
+            self.plt.addItem(Median)
+            self.plt.addItem(labEnergy)
+            variance = pg.PlotCurveItem(thetaEjectile*180/np.pi, energyDifference, pen={'color':self.colours[12], 'width':3}, name="Energy Variance")
+            self.plt.addItem(difference)
+            self.plt.addItem(variance)
+            self.plt.setTitle("Energy variance for the decaying nucleus as a function of Ejectile angle")
+            self.plt.setLabel("left", "Energy difference /MeV")
+            self.plt.setLabel("bottom", "Ejectile angle /deg")
+            self.plt.getAxis("bottom").setTickFont(self.font)
+            self.plt.getAxis("left").setTickFont(self.font)
+        
+        return(median, eDiffBeam, EkLab, energyDifference)
+        
+    def MultiExcitationGenerator(self):
+        self.args = ["Excitation min", "Excitation Max", "Angle of focus"]
+        self.defaults = [16, 24, 150]
+        if self.default == 1:
+            self.args=self.defaults
+        else:
+            for i in range(len(self.args)):
+                aux = input("Please input a " + self.args[i] + " (MeV):")
+                while True:
+                    try:
+                        aux = float(aux)
+                    except ValueError:
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
+                    except TypeError:
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
+                    else:
+                        break
+                self.args[i] = aux
+        excitationEnergies = np.arange(self.args[0], self.args[1], 1)
+        median = np.zeros((len(excitationEnergies), 18000))
+        eDiffBeam = np.zeros((len(excitationEnergies), 18000))
+        EkLab = np.zeros((len(excitationEnergies), 18000))
+        energyDifference = np.zeros((len(excitationEnergies),18000))
+        for i in range(len(excitationEnergies)):
+            medianSingle, eDiffBeamSingle, EkLabSingle, energyDifferenceSingle = self.EnergyRangeInput(excitationEnergies[i])
+            median[i] = medianSingle
+            eDiffBeam[i] = eDiffBeamSingle
+            EkLab[i] = EkLabSingle
+            energyDifference[i] = energyDifferenceSingle
+            self.graphicLayout.removeWidget(self.graph)
+        angleIndex = round(18000 * self.args[2]/180)
+        angle = self.args[2]
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graphicLayout.addWidget(self.graph)
+        self.plt = self.graph.addPlot(row = 0, col = 0)
+        eDiffBeamData = eDiffBeam[:,angleIndex]
+        curve = pg.PlotCurveItem(excitationEnergies, eDiffBeamData, pen={'color':self.colours[8], 'width':3}, name="Beam energy - Median recoil energy")
+        data = energyDifference[:,angleIndex]/median[:,angleIndex]
+        curve2 = pg.PlotCurveItem(excitationEnergies, data)
+        curve3 = pg.PlotCurveItem(excitationEnergies, energyDifference[:,angleIndex], pen={'color':self.colours[10], 'width':3}, name="Energy variance")
+        self.plt.addLegend()
+        self.plt.addItem(curve)
+        #self.plt.addItem(curve2)
+        self.plt.addItem(curve3)
+        self.plt.setTitle("Decay nucleus energy variance as a function of excitation energy at for a scattering angle of " + str(angle)) 
+        self.plt.setLabel("bottom", "Excitation energy /MeV")
+        self.plt.setLabel("left", "Energy /MeV")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
+        
         
 app = QApplication(sys.argv)
 window = MainWindow()

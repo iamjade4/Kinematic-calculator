@@ -94,7 +94,7 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
     
     ##This Emax ONLY works when both of the decay particles are of the same mass.
     Emax = 4*EkCM*(mDaughter2/mDaughter1)/(1+4*mDaughter2/mDaughter1)
-    EDaughter1 = np.random.rand(1) * Emax ##THIS is the cause of the variation
+    EDaughter1 = Emax/2 #np.random.rand(1) * Emax ##THIS is the cause of the variation
     # pDaughter23 = - pDaughter1
     # EDaughter23 = EkCM - EDaughter1 ##I don't need to solve for the neutrons, only the decay nucleus.    
     if multiAngle == False:
