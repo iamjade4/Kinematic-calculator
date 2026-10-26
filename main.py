@@ -9,6 +9,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QThread, QTimer, QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QComboBox, QSlider, QLabel, QPushButton, QProgressBar, QCheckBox, QLineEdit, QListWidgetItem, QListWidget, QDialog, QAction, QMenu, QToolBar, QMenuBar
 from PyQt5.QtGui import QIntValidator 
+from scipy import integrate
 #import pyqtgraph as pg ##will use this when i do nice frontend
 import matplotlib.pyplot as plt
 
@@ -16,7 +17,8 @@ import matplotlib.pyplot as plt
 from materials import *
 ##defining kinematics modules here
 
-
+global m_e
+m_e = 0.511 ##MeV
 def RelativisticVelocityCalc(p, m):
     return(np.sqrt((p**2)/(p**2 + m**2)))
 
@@ -26,7 +28,15 @@ def Gamma(v):
 def ThresholdKineticEnergy(Qvalue, ExTarget, mTarget, mBeam):
     return((ExTarget - Qvalue)*(mBeam + mTarget)/mTarget)
 
-
+def BetheBloch(Z, Ek, m, n, I, index):
+    E = Ek
+    def f(E):
+        v = np.sqrt((2*E/m)/(1+2*E/m))
+        return 1/(-(4*np.pi*n*Z**2)/(m_e*v**2)*(197.3/137 * 10**-13)**2*(np.log((2*m_e*v**2*Gamma(v)**2)/(I*(1-v**2)))-v**2)/10) ##dE/dX in terms of E instead of v
+    v = np.sqrt((2*E/m)/(1+2*E/m))
+    dEdx = -(4*np.pi*n*Z**2)/(m_e*v**2)*(197.3/137 * 10**-13)**2*(np.log((2*m_e*v**2*Gamma(v)**2)/(I*(1-v**2)))-v**2)/10
+    Range, aux = integrate.quad(f, E[index], 0) #throwing up and puking and vomiting WHY ARE THERE NO AVAILABLE VECTORISED INTEGRATION METHODS
+    return(Range, dEdx)
 # def CSC(theta, gamma):
 #     return(((1 + gamma**2 + 2*gamma*np.cos(theta)))**(3/2)/abs(1 + gamma*np.cos(theta))) ##from catford's lectures
 
@@ -209,6 +219,3 @@ def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil
     #     plt.ylabel("Lab angle /deg")
     #     plt.show()
     return(EkRecoil_lab, EkEjectile_lab, vRecoil_lab, vEjectile_lab, thetaRecoilLab, thetaEjectileLab, sum(hist[1])/len(hist[1]))
-
-
-    
