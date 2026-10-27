@@ -42,8 +42,8 @@ class MainWindow(QMainWindow):
  #####OOOOOOOOOOOOOOooooooooooooooo__________________WIDGETS__________________oooooooooooooooOOOOOOOOOOOO#######        
 
         
-        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate Ejectile lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration " + "\n" + "5 Calculate the energy variance")
-        self.choiceLabel.setFixedHeight(120)
+        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate Ejectile lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration " + "\n" + "5 Calculate the energy variance" + "\n" + "6 Generate angles for multiple excitations" + "\n" + "7 Calculate the angle intensity for the ejectile" + "\n" + "8 Calculate the range of the ejectile in a detector")
+        self.choiceLabel.setFixedHeight(180)
         self.inputLayout.addWidget(self.choiceLabel) 
         self.choiceInput = QComboBox()
         self.choiceInput.addItems(["1", "2", "3", "4", "5", "6", "7", "8"])
