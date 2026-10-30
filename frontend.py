@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.choiceLabel.setFixedHeight(180)
         self.inputLayout.addWidget(self.choiceLabel) 
         self.choiceInput = QComboBox()
-        self.choiceInput.addItems(["1", "2", "3", "4", "5", "6", "7", "8"])
+        self.choiceInput.addItems(["1", "2", "3", "4", "5", "6", "7", "8", "9"])
         self.choiceInput.currentTextChanged.connect(self.Choices)
         self.inputLayout.addWidget(self.choiceInput)
         
@@ -183,6 +183,8 @@ class MainWindow(QMainWindow):
             self.AngleIntensityDistribution()
         elif self.choice == "8":
             self.BetheBlochInput()
+        elif self.choice == "9":
+            self.Rigidity()
         else:  
             print("Closing...")
             
@@ -522,7 +524,7 @@ class MainWindow(QMainWindow):
             self.plt.getAxis("bottom").setTickFont(self.font)
             self.plt.getAxis("left").setTickFont(self.font)
         
-        return(median, eDiffBeam, EkLab, energyDifference)
+        return(median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile)
         
     def MultiExcitationGenerator(self):
         self.args = ["Excitation min", "Excitation Max", "Angle of focus"]
@@ -620,6 +622,44 @@ class MainWindow(QMainWindow):
         self.plt.addItem(curve)
         self.plt.setTitle("Range of the protons in silicon as a function of their angles")
         self.plt.setLabel("left", "Range /mm")
+        self.plt.setLabel("bottom", "Ejectile angle /deg")
+        self.plt.getAxis("bottom").setTickFont(self.font)
+        self.plt.getAxis("left").setTickFont(self.font)
+    
+    def Rigidity(self): ##Magnetic rigidity calculator
+        args = ["BeamZ", "DecayZ"]
+        defaults = [41, 41] #Both niobium
+        if self.default == 1:
+            args = defaults
+        else:
+            for i in range(len(args)):
+                aux = input("Please enter a Z for" + args[i])
+                while True:
+                    try:
+                        aux = int(aux)
+                    except ValueError:
+                        aux = input("Please input a detector:")
+                    except TypeError:
+                        aux = input("Please input a detector:")
+                    else:
+                        break
+                    args[i] = aux
+        beamZ, recoilZ = args
+        median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyRangeInput()
+        if hasattr(self, 'graph'):
+            self.graphicLayout.removeWidget(self.graph)
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graphicLayout.addWidget(self.graph)
+        self.plt = self.graph.addPlot()
+        self.plt.addLegend()
+        
+        beamRigidity = np.sqrt(2*EkLab*mBeam)/beamZ
+        recoilRigidity = np.sqrt(2*median*mDecayRecoil)/recoilZ
+        recoilRigidityPlot = pg.PlotCurveItem(thetaEjectile*180/np.pi, recoilRigidity/beamRigidity)
+
+        self.plt.addItem(recoilRigidityPlot)
+        self.plt.setTitle("Ratio of rigidities between the beam and the median energy decay particle")
+        self.plt.setLabel("left", "Rigidity ratio")
         self.plt.setLabel("bottom", "Ejectile angle /deg")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
