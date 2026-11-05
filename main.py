@@ -164,8 +164,8 @@ def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil
     # crossSections = CSC(thetaCM, ratio)
     # angularDist = AngDist(thetaCM, crossSections)
     #print("Angles", angularDist)
-    vEjectileOnAxis = vEjectile * np.cos(thetaCM)#velocity of the ejectile in the CM frame
-    vEjectileOffAxis = vEjectile * np.sin(thetaCM)
+    vEjectileOnAxis = vEjectile * np.cos(np.pi - thetaCM)#velocity of the ejectile in the CM frame
+    vEjectileOffAxis = vEjectile * np.sin(np.pi - thetaCM)
     #Angle of 0 in CM frame corresponds to a forwards scatter in CM frame
     gammaEjectile_CM = np.sqrt(1/(1-vEjectile**2))
     pEjectileOffAxis = gammaEjectile_CM*mEjectile*vEjectileOffAxis

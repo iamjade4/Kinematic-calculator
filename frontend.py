@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
  #####OOOOOOOOOOOOOOooooooooooooooo__________________WIDGETS__________________oooooooooooooooOOOOOOOOOOOO#######        
 
         
-        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate Ejectile lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration " + "\n" + "5 Calculate the energy variance" + "\n" + "6 Generate angles for multiple excitations" + "\n" + "7 Calculate the angle intensity for the ejectile" + "\n" + "8 Calculate the range of the ejectile in a detector")
+        self.choiceLabel = QLabel("Would you like to:" + "\n" + "1 Calculate the threshold energy for a reaction" + "\n" + "2 Calculate the reaction" + "\n" + "3 Calculate Ejectile lab angle distributions" + "\n" + "4 Calculate angle distributions for neutron evapouration " + "\n" + "5 Calculate the energy variance" + "\n" + "6 Generate angles for multiple excitations" + "\n" + "7 Calculate the angle intensity for the ejectile" + "\n" + "8 Calculate the range of the ejectile in a detector" + "\n" + "9 Calculate the magnetic rigidity")
         self.choiceLabel.setFixedHeight(180)
         self.inputLayout.addWidget(self.choiceLabel) 
         self.choiceInput = QComboBox()
@@ -131,17 +131,13 @@ class MainWindow(QMainWindow):
   
     
     def Run(self): ##This happens after the start button gets pressed
+        self.ClearGraphs()
         if self.choice == "1":
             self.ThresholdKineticEnergyInput()
             
         elif self.choice == "2":
             
             recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
-            if hasattr(self, 'graph'):
-                if hasattr(self, 'graphIndex'):
-                    self.graphicLayout.removeWidget(self.graph[self.graphIndex])
-                else:
-                    self.graphicLayout.removeWidget(self.graph)
             
             self.graph = pg.GraphicsLayoutWidget()
             self.graphicLayout.addWidget(self.graph)
@@ -167,15 +163,7 @@ class MainWindow(QMainWindow):
             self.ThreeBodyDecaySimInput()
             
         elif self.choice == "5":
-            if hasattr(self, 'graph'):
-                if hasattr(self, 'graphIndex'):
-                    self.graphicLayout.removeWidget(self.graph[self.graphIndex])
-                    for i in range(len(self.graph)):
-                        self.plt[i].clear()
-                        
-                else:
-                    self.graphicLayout.removeWidget(self.graph)
-
+            
             self.EnergyRangeInput()
         elif self.choice == "6":
             self.MultiExcitationGenerator()
@@ -190,8 +178,26 @@ class MainWindow(QMainWindow):
             
             
  #####OOOOOOOOOOOOOOooooooooooooooo________________RUN METHODS_______________oooooooooooooooOOOOOOOOOOOO#######           
-            
-            
+ 
+ 
+     
+
+    def ClearGraphs(self): # Just for cleaning up between methodss
+        if hasattr(self, 'graph'):
+            if hasattr(self, 'graphIndex'):
+                try:
+                    self.graphicLayout.removeWidget(self.graph[self.graphIndex])
+                    for i in range(len(self.graph)):
+                        self.plt[i].clear()
+                    self.graphButtonBackward.hide()
+                    self.graphButtonForward.hide()
+                except TypeError:
+                    self.graphicLayout.removeWidget(self.graph)
+                    
+            else:
+                self.graphicLayout.removeWidget(self.graph)
+
+    
     def TwoBodyCollisionInput(self, *args): #Used for testing a single lab beam energy and generating a range of angles for both the ejectile in the collision and the recoil nucleus
         self.args = ["Ek_lab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile", "DecayType"]
         self.Defaults(self.defaultSwitch.checkState())
@@ -280,8 +286,6 @@ class MainWindow(QMainWindow):
         labAngles = np.zeros(len(energies))
 
         if len(args) == 0: #This is for the regular option 3
-            if hasattr(self, 'graph'):
-                self.graphicLayout.removeWidget(self.graph)
             
             self.graph = pg.GraphicsLayoutWidget()
             self.graphicLayout.addWidget(self.graph)
@@ -348,14 +352,7 @@ class MainWindow(QMainWindow):
                         break
                 self.decayArgs[i] = aux
         mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
-        if hasattr(self, 'graph'):
-            if hasattr(self, 'graphIndex'):
-                self.graphicLayout.removeWidget(self.graph[self.graphIndex])
-                for i in range(len(self.graph)):
-                    self.plt[i].clear()
-                    
-            else:
-                self.graphicLayout.removeWidget(self.graph)
+      
 
         if EkMin == 0 or EkMin == EkMax: #using one energy
             self.graph = pg.GraphicsLayoutWidget()
@@ -612,8 +609,6 @@ class MainWindow(QMainWindow):
         index = 0 ##Just a chosen index in the array of ejectile energies
         dedx = BetheBloch(1, ejectileEk, self.mEjectile, n_eDet, IDet, index) #yay!!!
         print(dedx[0])
-        if hasattr(self, 'graph'):
-            self.graphicLayout.removeWidget(self.graph)
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot()
@@ -633,21 +628,19 @@ class MainWindow(QMainWindow):
             args = defaults
         else:
             for i in range(len(args)):
-                aux = input("Please enter a Z for" + args[i])
+                aux = input("Please enter a Z for " + args[i])
                 while True:
                     try:
                         aux = int(aux)
                     except ValueError:
-                        aux = input("Please input a detector:")
+                        aux = input("Please input a Z:")
                     except TypeError:
-                        aux = input("Please input a detector:")
+                        aux = input("Please input a Z:")
                     else:
                         break
                     args[i] = aux
         beamZ, recoilZ = args
         median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyRangeInput()
-        if hasattr(self, 'graph'):
-            self.graphicLayout.removeWidget(self.graph)
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot()
@@ -663,7 +656,7 @@ class MainWindow(QMainWindow):
         self.plt.setLabel("bottom", "Ejectile angle /deg")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
-        
+        self.graphIndex = 0
         
         
 app = QApplication(sys.argv)
