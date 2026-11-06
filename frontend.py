@@ -7,9 +7,9 @@ import sys
 
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QThread, QTimer, QObject, pyqtSignal, QEvent
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QComboBox, QSlider, QLabel, QPushButton, QProgressBar, QCheckBox, QLineEdit, QListWidgetItem, QListWidget, QDialog, QAction, QMenu, QToolBar, QMenuBar, QGridLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QComboBox, QSlider, QLabel, QPushButton, QProgressBar, QCheckBox, QLineEdit, QListWidgetItem, QListWidget, QDialog, QAction, QMenu, QToolBar, QMenuBar, QGridLayout, QPlainTextEdit
 from PyQt5.QtGui import QIntValidator 
-import pyqtgraph as pg ##will use this when i do nice frontend
+import pyqtgraph as pg 
 
 from main import ThresholdKineticEnergy, TwoBodyCollision, CentreofMassKineticEnergy, TwoBodyDecay, ThreeBodyDecay, ThreeBodyDecayGenerator, BetheBloch, RelativisticVelocityCalc
 
@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         self.rightWidget.setLayout(self.graphicLayout)
         self.font = QFont()
         self.font.setPointSize(20)
+        self.aux="Null"
         
         self.choice = 1 ##Default choice
         self.default = 0
@@ -35,8 +36,6 @@ class MainWindow(QMainWindow):
         self.colours = ["maroon", "red", "darkorange", "goldenrod", "olive", "forestgreen", "darkgreen", "lightseagreen", "teal", "dodgerblue", "blue", "darkslateblue", "indigo", "purple", "crimson", "black"]
         ## ^Used for when exporting on a white background
         self.detectors = [(28, 14, 0.000173, 6.991*10**23),(72, 32, 0.000350, 14.24*10**23)] ##m (u), Z, I (MeV), n_e (/cm**3)
-        
-        
         #Starting to define the inputs
 
  #####OOOOOOOOOOOOOOooooooooooooooo__________________WIDGETS__________________oooooooooooooooOOOOOOOOOOOO#######        
@@ -71,25 +70,44 @@ class MainWindow(QMainWindow):
         self.viewEnergyDistribution.pressed.connect(self.ViewEnergyDistribution)        
         self.inputLayout.addWidget(self.viewEnergyDistribution)
         self.viewEnergyDistribution.hide()
+        
+        self.outBox = QPlainTextEdit("Hi")
+        self.outBox.setFixedHeight(50)
+        self.outBox.setLineWrapMode(True)
+        self.inputLayout.addWidget(self.outBox)
+        self.outBox.setReadOnly(True)
+        
+        self.inBox = QLineEdit("Defaults")
+        self.inBox.setFixedHeight(30)
+        self.inBox.returnPressed.connect(self.EnterPressed)
+        self.inputLayout.addWidget(self.inBox)
+        self.inBox.setDisabled(False)
 
         self.inputLayout.addStretch()
         
+        self.leftWidget.setFixedWidth(467)
         self.mainLayout.addWidget(self.leftWidget)
         self.mainLayout.addWidget(self.rightWidget)
         container = QWidget()
         container.setLayout(self.mainLayout)
         self.setCentralWidget(container)
   
- #####OOOOOOOOOOOOOOooooooooooooooo______________WIDGET METHODS_______________oooooooooooooooOOOOOOOOOOOO#######                
-  
-    
+#####OOOOOOOOOOOOOOooooooooooooooo______________WIDGET METHODS_______________oooooooooooooooOOOOOOOOOOOO#######                
+
     def Choices(self):
         self.choice = self.choiceInput.currentText()
+
+    def EnterPressed(self):
+        if(self.inputting == True):
+            self.aux = self.inBox.text()
+            return(self.aux)
+        else:
+            return()
+        
     def Backward(self):
         if hasattr(self, 'graphIndex'):
-                
             if self.graphIndex == 0:
-                print("What are you doing??? Are you crazy? You're going to get us all killed!!")
+                self.outBox.setPlainText("What are you doing??? Are you crazy? You're going to get us all killed!!")
             else:
                 self.graphicLayout.removeWidget(self.graph[self.graphIndex])
                 self.graph[self.graphIndex].setParent(None)
@@ -100,19 +118,20 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'graphIndex'):
             
             if self.graphIndex == (len(self.graph) -1):
-                print("What are you doing??? Are you crazy? You're going to get us all killed!!")
+                self.outBox.setPlainText("What are you doing??? Are you crazy? You're going to get us all killed!!")
             else:
                 self.graphicLayout.removeWidget(self.graph[self.graphIndex])
                 self.graph[self.graphIndex].setParent(None)
                 self.graphIndex += 1
                 self.graphicLayout.addWidget(self.graph[self.graphIndex])
 
-    
     def Defaults(self, state):
         if state == Qt.Checked:
             self.default = 1
+            self.inBox.setDisabled(True)
         else:
             self.default = 2
+            self.inBox.setDisabled(False)
     
     def MultiAngle(self, state):
         if state == Qt.Checked:
@@ -125,62 +144,6 @@ class MainWindow(QMainWindow):
         self.plt[self.graphIndex].clear()
         curve = pg.PlotCurveItem(self.thetaEjectile*180/np.pi, self.energyRange[self.graphIndex])
         self.plt[self.graphIndex].addItem(curve)
-  
-
-###########OOOOOOOOOOOOOOOoooooooooooo______________________RUN_______________________oooooooooooOOOOOOOOOO###########    
-  
-    
-    def Run(self): ##This happens after the start button gets pressed
-        self.ClearGraphs()
-        if self.choice == "1":
-            self.ThresholdKineticEnergyInput()
-            
-        elif self.choice == "2":
-            
-            recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
-            
-            self.graph = pg.GraphicsLayoutWidget()
-            self.graphicLayout.addWidget(self.graph)
-            self.plt = self.graph.addPlot(row = 0, col = 0)
-            if self.multiAngle == True:
-                self.plt.addLegend()
-                for i in range(len(EkDecay)):
-                    curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen={'color':self.colours[i], 'width':3}, name=i*45)
-                    self.plt.addItem(curve)
-            else:
-                curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay)
-                self.plt.addItem(curve)
-            self.plt.setTitle("Recoil nucleus energy as a function of Ejectile's angle")
-            self.plt.setLabel("left", "Energy /MeV")
-            self.plt.setLabel("bottom", "Angle /deg")
-            self.plt.getAxis("bottom").setTickFont(self.font)
-            self.plt.getAxis("left").setTickFont(self.font)
-        elif self.choice == "3":
-            self.LabAngleDistInput()
-            
-            
-        elif self.choice == "4":
-            self.ThreeBodyDecaySimInput()
-            
-        elif self.choice == "5":
-            
-            self.EnergyRangeInput()
-        elif self.choice == "6":
-            self.MultiExcitationGenerator()
-        elif self.choice == "7":
-            self.AngleIntensityDistribution()
-        elif self.choice == "8":
-            self.BetheBlochInput()
-        elif self.choice == "9":
-            self.Rigidity()
-        else:  
-            print("Closing...")
-            
-            
- #####OOOOOOOOOOOOOOooooooooooooooo________________RUN METHODS_______________oooooooooooooooOOOOOOOOOOOO#######           
- 
- 
-     
 
     def ClearGraphs(self): # Just for cleaning up between methodss
         if hasattr(self, 'graph'):
@@ -196,8 +159,36 @@ class MainWindow(QMainWindow):
                     
             else:
                 self.graphicLayout.removeWidget(self.graph)
-
     
+###########OOOOOOOOOOOOOOOoooooooooooo______________________RUN_______________________oooooooooooOOOOOOOOOO###########    
+  
+    def Run(self): ##This happens after the start button gets pressed
+        self.ClearGraphs()
+        if self.choice == "1":
+            self.ThresholdKineticEnergyInput()
+        elif self.choice == "2":
+            self.ReactionCalculation()
+        elif self.choice == "3":
+            self.LabAngleDistInput()
+        elif self.choice == "4":
+            self.ThreeBodyDecaySimInput()
+        elif self.choice == "5":
+            self.EnergyRangeInput()
+        elif self.choice == "6":
+            self.MultiExcitationGenerator()
+        elif self.choice == "7":
+            self.AngleIntensityDistribution()
+        elif self.choice == "8":
+            self.BetheBlochInput()
+        elif self.choice == "9":
+            self.Rigidity()
+        else:  
+            print("Closing...")
+            
+######OOOOOOOOOOOOOOooooooooooooooo________________RUN METHODS_______________oooooooooooooooOOOOOOOOOOOO########
+
+############-------------------------------2----------------------------############# 
+
     def TwoBodyCollisionInput(self, *args): #Used for testing a single lab beam energy and generating a range of angles for both the ejectile in the collision and the recoil nucleus
         self.args = ["Ek_lab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile", "DecayType"]
         self.Defaults(self.defaultSwitch.checkState())
@@ -205,18 +196,22 @@ class MainWindow(QMainWindow):
         if self.default == 1:
             self.args = self.defaults
         else:
+            self.inputting = True
             for i in range(len(self.args)):
-                aux = input("Please input a " + self.args[i] + " (MeV):")
-                while True:
-                    try:
-                        aux = float(aux)
-                    except ValueError:
-                        aux = input("Please input a " + self.args[i] + " (MeV):")
-                    except TypeError:
-                        aux = input("Please input a " + self.args[i] + " (MeV):")
-                    else:
-                        break
-                self.args[i] = aux
+                self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
+                self.aux = self.EnterPressed()
+                    
+                
+                # try:
+                #     self.aux = float(self.aux)
+                # except ValueError:
+                #     self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
+                # except TypeError:
+                #     self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
+                
+                
+                self.args[i] = self.aux
+            self.inputting = False
         EkLab, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, DecayType = self.args #Giving the args names to make it easier to track them
         EkBeamCm, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) #Calling the module to obtain CoM information for the collision
         #CoMKE only returns a single EKCM, there are no angular distributions yet
@@ -243,8 +238,30 @@ class MainWindow(QMainWindow):
                 i = 0
                 EkDecay, angleDecay = ThreeBodyDecay(recoilEk, exRecoil, -16, thetaRecoil, mRecoil, 85661.69 , 939.57, 939.57, self.multiAngle, i)
         return(recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile)
+ 
+############-------------------------------2----------------------------############ 
+
+    def ReactionCalculation(self):
+        recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
         
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graphicLayout.addWidget(self.graph)
+        self.plt = self.graph.addPlot(row = 0, col = 0)
+        if self.multiAngle == True:
+            self.plt.addLegend()
+            for i in range(len(EkDecay)):
+                curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen={'color':self.colours[i], 'width':3}, name=i*45)
+                self.plt.addItem(curve)
+        else:
+            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay)
+            self.plt.addItem(curve)
+        self.plt.setTitle("Recoil nucleus energy as a function of Ejectile's angle")
+        self.plt.setLabel("left", "Energy /MeV")
+        self.plt.setLabel("bottom", "Angle /deg")
+        self.plt.getAxis("bottom").setTickFont(self.font)
+        self.plt.getAxis("left").setTickFont(self.font)
     
+############-------------------------------3----------------------------############ 
 
     def ThresholdKineticEnergyInput(self):
         args = ["Qvalue", "excitedState", "mTarget", "mBeam"]
@@ -312,7 +329,9 @@ class MainWindow(QMainWindow):
                 labAngles[i] = bestLabAngle
                 thetaEjectiles[i] = thetaEjectile
             return(thetaEjectiles, energies) #Used for angular distribution intensities
-        
+
+############-------------------------------4----------------------------############ 
+
     def ThreeBodyDecaySimInput(self): #Going to be used to return a range of energies and momenta for the decay nucleus for a given decay energy
         self.collisionArgs = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         self.collisionDefaults = [800, 4000, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
@@ -353,7 +372,6 @@ class MainWindow(QMainWindow):
                 self.decayArgs[i] = aux
         mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
       
-
         if EkMin == 0 or EkMin == EkMax: #using one energy
             self.graph = pg.GraphicsLayoutWidget()
             self.graphicLayout.addWidget(self.graph)
@@ -410,7 +428,6 @@ class MainWindow(QMainWindow):
                 self.graphicLayout.addWidget(self.graph[0]) ##Adds the first graph
                 self.viewEnergyDistribution.show()
 
-
             else:
                 self.graph = pg.GraphicsLayoutWidget()
                 self.graphicLayout.addWidget(self.graph)
@@ -429,10 +446,12 @@ class MainWindow(QMainWindow):
                 self.plt.getAxis("bottom").setTickFont(self.font)
                 self.plt.getAxis("left").setTickFont(self.font)
     
+############-------------------------------5----------------------------############     
+    
     def EnergyRangeInput(self, *args): 
 ##This will be for creating
 ##1: a set of recoil nucleus energies based on the scattering angle for a single input lab energy and 
-##2: creating a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
+##2: a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
 ##So it will be a 3 step process of energy ranges
         self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
@@ -522,7 +541,9 @@ class MainWindow(QMainWindow):
             self.plt.getAxis("left").setTickFont(self.font)
         
         return(median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile)
-        
+
+############-------------------------------6----------------------------############ 
+    
     def MultiExcitationGenerator(self):
         self.args = ["Excitation min", "Excitation Max", "Angle of focus"]
         self.defaults = [16, 24, 150]
@@ -547,7 +568,7 @@ class MainWindow(QMainWindow):
         EkLab = np.zeros((len(excitationEnergies), 18000))
         energyDifference = np.zeros((len(excitationEnergies),18000))
         for i in range(len(excitationEnergies)):
-            medianSingle, eDiffBeamSingle, EkLabSingle, energyDifferenceSingle = self.EnergyRangeInput(excitationEnergies[i])
+            medianSingle, eDiffBeamSingle, EkLabSingle, energyDifferenceSingle, *args = self.EnergyRangeInput(excitationEnergies[i])
             median[i] = medianSingle
             eDiffBeam[i] = eDiffBeamSingle
             EkLab[i] = EkLabSingle
@@ -572,7 +593,9 @@ class MainWindow(QMainWindow):
         self.plt.setLabel("left", "Energy /MeV")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
-        
+
+############-------------------------------7----------------------------############ 
+
     def AngleIntensityDistribution(self):
         thetaEjectiles, energies = self.LabAngleDistInput(0)
         self.graph = pg.GraphicsLayoutWidget()
@@ -588,7 +611,9 @@ class MainWindow(QMainWindow):
         self.plt.setLabel("left", "Counts")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
-        
+
+############-------------------------------8----------------------------############ 
+
     def BetheBlochInput(self):  
         recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
         if self.default == 1:
@@ -608,7 +633,7 @@ class MainWindow(QMainWindow):
         mDet, ZDet, IDet, n_eDet = self.detectors[self.detector]
         index = 0 ##Just a chosen index in the array of ejectile energies
         dedx = BetheBloch(1, ejectileEk, self.mEjectile, n_eDet, IDet, index) #yay!!!
-        print(dedx[0])
+        ## print(dedx[0])
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot()
@@ -620,7 +645,9 @@ class MainWindow(QMainWindow):
         self.plt.setLabel("bottom", "Ejectile angle /deg")
         self.plt.getAxis("bottom").setTickFont(self.font)
         self.plt.getAxis("left").setTickFont(self.font)
-    
+
+############-------------------------------9----------------------------############ 
+
     def Rigidity(self): ##Magnetic rigidity calculator
         args = ["BeamZ", "DecayZ"]
         defaults = [41, 41] #Both niobium

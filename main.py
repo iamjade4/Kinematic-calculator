@@ -86,13 +86,7 @@ def TwoBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2):
     daughter1Angle = np.arctan(vDaughter1OffAxisLab/vDaughter1OnAxisLab)*180/np.pi
     daughter2Angle = np.arctan(vDaughter2OffAxisLab/vDaughter2OnAxisLab)*180/np.pi
     EkDecay = (vDaughter1OffAxisLab**2 + vDaughter1OnAxisLab**2)/(2*mDaughter1) ##Getting the decay energy of the parent nucleus
-    
-    plt.hist(daughter1Angle, bins=180)
-    plt.title("Decay Recoil nucleus angles (deg)")
-    plt.show()
-    plt.hist(daughter2Angle, bins=180)
-    plt.title("Decay Recoil particles angles (deg)")
-    plt.show()
+
     #print("Angles:", daughter1Angle, daughter2Angle)
     return(EkDecay, daughter1Angle)
     
@@ -109,16 +103,6 @@ def ThreeBodyDecay(Ek, Eex, Q, theta, mParent, mDaughter1, mDaughter2, mDaughter
     # EDaughter23 = EkCM - EDaughter1 ##I don't need to solve for the neutrons, only the decay nucleus.    
     if multiAngle == False:
         thetaCM = (np.random.rand(1)-0.5) * 2*np.pi #isotropic angle selection
-        # if choice != "4":    
-        #     print(theta, daughter1Angle, daughter1AngleBeam)
-        #     #print(EDaughter1Lab)
-        #     plt.hist(theta*180/np.pi, bins=180)
-        #     plt.title("Recoil Scattering angles (deg)")
-        #     plt.show()
-            
-        #     plt.hist(daughter1Angle*180/np.pi, bins=180)
-        #     plt.title("Decay Recoil nucleus angles (deg)")
-        #     plt.show()
     elif multiAngle == True:
         thetaCM = np.pi/4*iteration
     if len(args) != 0: #Not really for multiangle, but still using the arg to parse this through
@@ -196,7 +180,7 @@ def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil
 
     
     maxangle_index = np.argmax(hist[0]) ##finds the bin number with the most counts
-    print("Optimal lab angle:", hist[1][maxangle_index])
+    ## print("Optimal lab angle:", hist[1][maxangle_index])
 
     
     
