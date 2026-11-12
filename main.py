@@ -143,16 +143,18 @@ def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil
     f = mTarget/mEjectile   
     ## for now just create a basic distribution
     thetaCM = np.arange(0, 180, 0.01)*np.pi/180 #generates thetas from 0-180
-    vEjectile = V*np.sqrt(f*q*mRecoil/mBeam)
+    vEjectile = -V*np.sqrt(f*q*mRecoil/mBeam) ## It's in the negative direction
     # ratio = 1/(np.sqrt(f*q*mRecoil/mBeam))
     # crossSections = CSC(thetaCM, ratio)
     # angularDist = AngDist(thetaCM, crossSections)
     #print("Angles", angularDist)
-    vEjectileOnAxis = vEjectile * np.cos(np.pi - thetaCM)#velocity of the ejectile in the CM frame
-    vEjectileOffAxis = vEjectile * np.sin(np.pi - thetaCM)
+    vEjectileOnAxis = vEjectile * np.cos(np.pi-thetaCM)#velocity of the ejectile in the CM frame
+    vEjectileOffAxis = vEjectile * np.sin(thetaCM)
     #Angle of 0 in CM frame corresponds to a forwards scatter in CM frame
     gammaEjectile_CM = np.sqrt(1/(1-vEjectile**2))
     pEjectileOffAxis = gammaEjectile_CM*mEjectile*vEjectileOffAxis
+    if(vEjectileOffAxis.any()<0):
+        print("Works")
     pRecoilOffAxis = -pEjectileOffAxis
     pEjectileOnAxis = gammaEjectile_CM*mEjectile*vEjectileOnAxis
     pRecoilOnAxis = -pEjectileOnAxis
@@ -160,13 +162,13 @@ def TwoBodyCollision(Ek_CM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, ExRecoil
     vRecoilOffAxis = pRecoilOffAxis/mRecoil ##pRecoil is so low<
     
     ##from now on it should all be array math
-    vEjectile_labOnAxis = -vEjectileOnAxis + V 
+    vEjectile_labOnAxis = vEjectileOnAxis + V 
     # print(vEjectile_labOnAxis)
     vEjectile_labOffAxis = vEjectileOffAxis
     vEjectile_lab = np.sqrt(vEjectile_labOffAxis**2 + vEjectile_labOnAxis**2)
-    mask = np.where(vEjectile_labOnAxis < 0, 1, 0)
-    mask2 = np.where(vEjectile_labOnAxis <0, -1, 1)
-    thetaEjectileLab = np.arctan(vEjectile_labOffAxis/vEjectile_labOnAxis)  + mask*np.pi
+    mask = np.where(vEjectile_labOnAxis>0, 1, 0)
+    mask2 = np.where(vEjectile_labOnAxis>0, -1, 1)
+    thetaEjectileLab = np.pi - (np.arctan(vEjectile_labOffAxis/vEjectile_labOnAxis) + mask*np.pi)
     
     #print(V, vEjectile, vEjectile_labOnAxis)
     vRecoilOnAxislab = vRecoilOnAxis + V

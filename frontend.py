@@ -4,9 +4,11 @@ import math
 import random
 import scipy
 import sys
+import json
+from time import sleep
 
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import Qt, QThread, QTimer, QObject, pyqtSignal, QEvent
+from PyQt5.QtCore import Qt, QThread, QTimer, QObject, pyqtSignal, QEvent, QMutex, QWaitCondition
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QComboBox, QSlider, QLabel, QPushButton, QProgressBar, QCheckBox, QLineEdit, QListWidgetItem, QListWidget, QDialog, QAction, QMenu, QToolBar, QMenuBar, QGridLayout, QPlainTextEdit
 from PyQt5.QtGui import QIntValidator 
 import pyqtgraph as pg 
@@ -28,9 +30,11 @@ class MainWindow(QMainWindow):
         self.font = QFont()
         self.font.setPointSize(20)
         self.aux="Null"
-        
+        with open('config.json') as f:
+            self.config = json.load(f)
+            
         self.choice = 1 ##Default choice
-        self.default = 0
+        self.default = 1
         self.multiAngle = False
         #self.colours = ["Red", "Green", "Blue", "Cyan", "Magenta", "Yellow", "DarkRed", "DarkGreen", "DarkBlue", "DarkCyan", "DarkMagenta", "turquoise", "darkorchid", "chocolate", "cadetblue", "deeppink", "darkviolet"]
         self.colours = ["maroon", "red", "darkorange", "goldenrod", "olive", "forestgreen", "darkgreen", "lightseagreen", "teal", "dodgerblue", "blue", "darkslateblue", "indigo", "purple", "crimson", "black"]
@@ -71,18 +75,6 @@ class MainWindow(QMainWindow):
         self.inputLayout.addWidget(self.viewEnergyDistribution)
         self.viewEnergyDistribution.hide()
         
-        self.outBox = QPlainTextEdit("Hi")
-        self.outBox.setFixedHeight(50)
-        self.outBox.setLineWrapMode(True)
-        self.inputLayout.addWidget(self.outBox)
-        self.outBox.setReadOnly(True)
-        
-        self.inBox = QLineEdit("Defaults")
-        self.inBox.setFixedHeight(30)
-        self.inBox.returnPressed.connect(self.EnterPressed)
-        self.inputLayout.addWidget(self.inBox)
-        self.inBox.setDisabled(False)
-
         self.inputLayout.addStretch()
         
         self.leftWidget.setFixedWidth(467)
@@ -97,13 +89,6 @@ class MainWindow(QMainWindow):
     def Choices(self):
         self.choice = self.choiceInput.currentText()
 
-    def EnterPressed(self):
-        if(self.inputting == True):
-            self.aux = self.inBox.text()
-            return(self.aux)
-        else:
-            return()
-        
     def Backward(self):
         if hasattr(self, 'graphIndex'):
             if self.graphIndex == 0:
@@ -128,10 +113,8 @@ class MainWindow(QMainWindow):
     def Defaults(self, state):
         if state == Qt.Checked:
             self.default = 1
-            self.inBox.setDisabled(True)
         else:
             self.default = 2
-            self.inBox.setDisabled(False)
     
     def MultiAngle(self, state):
         if state == Qt.Checked:
@@ -196,12 +179,11 @@ class MainWindow(QMainWindow):
         if self.default == 1:
             self.args = self.defaults
         else:
-            self.inputting = True
+            config = self.config["TwoBody"]
             for i in range(len(self.args)):
-                self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
-                self.aux = self.EnterPressed()
-                    
-                
+                aux = config[self.args[i]]
+                self.args[i] = aux
+                print(self.args[i])
                 # try:
                 #     self.aux = float(self.aux)
                 # except ValueError:
@@ -209,9 +191,6 @@ class MainWindow(QMainWindow):
                 # except TypeError:
                 #     self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
                 
-                
-                self.args[i] = self.aux
-            self.inputting = False
         EkLab, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, DecayType = self.args #Giving the args names to make it easier to track them
         EkBeamCm, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) #Calling the module to obtain CoM information for the collision
         #CoMKE only returns a single EKCM, there are no angular distributions yet
@@ -253,7 +232,7 @@ class MainWindow(QMainWindow):
                 curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay[i], pen={'color':self.colours[i], 'width':3}, name=i*45)
                 self.plt.addItem(curve)
         else:
-            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay)
+            curve = pg.PlotCurveItem(thetaEjectile*180/np.pi, EkDecay, pen={'color':self.colours[0], 'width':3})
             self.plt.addItem(curve)
         self.plt.setTitle("Recoil nucleus energy as a function of Ejectile's angle")
         self.plt.setLabel("left", "Energy /MeV")
@@ -455,7 +434,7 @@ class MainWindow(QMainWindow):
 ##So it will be a 3 step process of energy ranges
         self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
-        self.collisionDefaults = [2400, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
+        self.collisionDefaults = [2500, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
         self.decayDefaults = [85661.69, 939.57, 939.57]
         if self.default == 1:
             if len(args) != 0:
@@ -525,7 +504,7 @@ class MainWindow(QMainWindow):
             difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen={'color':self.colours[7], 'width':3}, name="Beam energy - Median")       
             Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen={'color':self.colours[10], 'width':3}, name="Median Energy")       
             
-            labEnergy = pg.InfiniteLine(EkLab, angle=0, pen={'width':3})
+            labEnergy = pg.InfiniteLine(EkLab, angle=0, pen={'color':self.colours[9], 'width':3})
             self.plt.addLegend(offset=(0,200))
             self.plt.addItem(Minima)
             self.plt.addItem(Maxima)
@@ -602,11 +581,18 @@ class MainWindow(QMainWindow):
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot(row = 0, col = 0)
         self.plt.addLegend()
-        for i in range(len(thetaEjectiles[:,0])):        
-            hist = np.histogram(thetaEjectiles[i,:]*180/np.pi,bins=180)
-            histogram = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, pen={'color':self.colours[i], 'width':3}, name=energies[i])
+        if self.multiAngle == True:
+            for i in range(len(thetaEjectiles[:,0])):        
+                hist = np.histogram(thetaEjectiles[i,:]*180/np.pi,bins=180)
+                histogram = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, pen={'color':self.colours[i], 'width':3}, name=energies[i])
+                self.plt.addItem(histogram)
+            self.plt.setTitle("Ejectile Angle distribution for a range of lab energies")
+        else:
+            index = len(thetaEjectiles[:,0]) -1
+            hist = np.histogram(thetaEjectiles[index,:]*180/np.pi,bins=180)
+            histogram = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, pen={'color':self.colours[index], 'width':3}, name=energies[index])
             self.plt.addItem(histogram)
-        self.plt.setTitle("Ejectile Angle distribution for a range of lab energies")
+        self.plt.setTitle("Ejectile Angle distribution")
         self.plt.setLabel("bottom", "Angle /Deg")
         self.plt.setLabel("left", "Counts")
         self.plt.getAxis("bottom").setTickFont(self.font)

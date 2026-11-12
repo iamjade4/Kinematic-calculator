@@ -1,0 +1,13 @@
+{
+"TwoBody": {
+  "Ek_lab": 2500,
+  "Qvalue": 5,
+  "mBeam": 86542.44,
+  "mTarget": 1876.139,
+  "mRecoil": 87479.78,
+  "mEjectile": 938.791,
+  "exRecoil": 18,
+  "exEjectile": 0,
+  "DecayType": 3
+  }
+}
