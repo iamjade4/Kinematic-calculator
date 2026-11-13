@@ -32,9 +32,8 @@ class MainWindow(QMainWindow):
         self.aux="Null"
         with open('config.json') as f:
             self.config = json.load(f)
-            
-        self.choice = 1 ##Default choice
-        self.default = 1
+        self.choice = "1" ##Default choice
+        self.default = True
         self.multiAngle = False
         #self.colours = ["Red", "Green", "Blue", "Cyan", "Magenta", "Yellow", "DarkRed", "DarkGreen", "DarkBlue", "DarkCyan", "DarkMagenta", "turquoise", "darkorchid", "chocolate", "cadetblue", "deeppink", "darkviolet"]
         self.colours = ["maroon", "red", "darkorange", "goldenrod", "olive", "forestgreen", "darkgreen", "lightseagreen", "teal", "dodgerblue", "blue", "darkslateblue", "indigo", "purple", "crimson", "black"]
@@ -55,6 +54,7 @@ class MainWindow(QMainWindow):
         
         self.defaultSwitch = QCheckBox("Toggle defaults")
         self.defaultSwitch.stateChanged.connect(self.Defaults)
+        self.defaultSwitch.toggle()
         self.inputLayout.addWidget(self.defaultSwitch)
         
         self.multiSwitch = QCheckBox("Toggle Multiangles")
@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
     def Choices(self):
         self.choice = self.choiceInput.currentText()
 
-    def Backward(self):
+    def Backward(self): ##Back button for when multiple graphs get displayed
         if hasattr(self, 'graphIndex'):
             if self.graphIndex == 0:
                 self.outBox.setPlainText("What are you doing??? Are you crazy? You're going to get us all killed!!")
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
                 self.graphIndex -= 1
                 self.graphicLayout.addWidget(self.graph[self.graphIndex])
         
-    def Forward(self):
+    def Forward(self): ##Forward button for when multiple graphs get displayed
         if hasattr(self, 'graphIndex'):
             
             if self.graphIndex == (len(self.graph) -1):
@@ -112,9 +112,9 @@ class MainWindow(QMainWindow):
 
     def Defaults(self, state):
         if state == Qt.Checked:
-            self.default = 1
+            self.default = True
         else:
-            self.default = 2
+            self.default = False
     
     def MultiAngle(self, state):
         if state == Qt.Checked:
@@ -123,12 +123,11 @@ class MainWindow(QMainWindow):
             self.multiAngle = False
             
     def ViewEnergyDistribution(self): #This will be for changing what plots are visible
-
         self.plt[self.graphIndex].clear()
         curve = pg.PlotCurveItem(self.thetaEjectile*180/np.pi, self.energyRange[self.graphIndex])
         self.plt[self.graphIndex].addItem(curve)
 
-    def ClearGraphs(self): # Just for cleaning up between methodss
+    def ClearGraphs(self): ##Just for cleaning up between methodss
         if hasattr(self, 'graph'):
             if hasattr(self, 'graphIndex'):
                 try:
@@ -138,13 +137,13 @@ class MainWindow(QMainWindow):
                     self.graphButtonBackward.hide()
                     self.graphButtonForward.hide()
                 except TypeError:
-                    self.graphicLayout.removeWidget(self.graph)
-                    
+                    self.graphicLayout.removeWidget(self.graph)    
             else:
                 self.graphicLayout.removeWidget(self.graph)
     
 ###########OOOOOOOOOOOOOOOoooooooooooo______________________RUN_______________________oooooooooooOOOOOOOOOO###########    
-  
+
+##Not really the most efficient way to do this, but at least they aren't nested if statements :)
     def Run(self): ##This happens after the start button gets pressed
         self.ClearGraphs()
         if self.choice == "1":
@@ -170,30 +169,51 @@ class MainWindow(QMainWindow):
             
 ######OOOOOOOOOOOOOOooooooooooooooo________________RUN METHODS_______________oooooooooooooooOOOOOOOOOOOO########
 
+############-------------------------------1----------------------------############# 
+
+    def ThresholdKineticEnergyInput(self):
+        self.args = ["Qvalue", "excitedState", "mTarget", "mBeam"]
+        for i in range(len(self.args)):
+            aux = input("Please input a " + self.args[i] + " (MeV):")    
+            while True:
+                try:
+                    aux = float(aux)
+                except ValueError:
+                    aux = input("Please input a " + self.args[i] + " (MeV):")
+                except TypeError:
+                    aux = input("Please input a " + self.args[i] + " (MeV):")
+                else:
+                    break
+                
+            self.args[i] = aux
+        return(print(ThresholdKineticEnergy(*self.args)))
+
 ############-------------------------------2----------------------------############# 
 
     def TwoBodyCollisionInput(self, *args): #Used for testing a single lab beam energy and generating a range of angles for both the ejectile in the collision and the recoil nucleus
         self.args = ["Ek_lab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile", "DecayType"]
-        self.Defaults(self.defaultSwitch.checkState())
-        self.defaults = [2500, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0, 3]
-        if self.default == 1:
-            self.args = self.defaults
-        else:
+        if self.default == True:
             config = self.config["TwoBody"]
             for i in range(len(self.args)):
                 aux = config[self.args[i]]
                 self.args[i] = aux
-                print(self.args[i])
-                # try:
-                #     self.aux = float(self.aux)
-                # except ValueError:
-                #     self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
-                # except TypeError:
-                #     self.outBox.setPlainText("Please input a " + self.args[i] + " (MeV):" + "\n")
+        else:
+            for i in range(len(self.args)):
+                aux = input("Please input a " + args[i] + " (MeV):")    
+                while True:
+                    try:
+                        aux = float(aux)
+                    except ValueError:
+                        aux = input("Please input a " + args[i] + " (MeV):")
+                    except TypeError:
+                        aux = input("Please input a " + args[i] + " (MeV):")
+                    else:
+                        break
+                self.args[i] = aux
                 
         EkLab, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, DecayType = self.args #Giving the args names to make it easier to track them
         EkBeamCm, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) #Calling the module to obtain CoM information for the collision
-        #CoMKE only returns a single EKCM, there are no angular distributions yet
+        ##CoMKE only returns a single EKCM, there are no angular distributions yet
         recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, V) #Obtains the post collision particle information
         #TwoBodyCollision returns an array of energies and particles as it uniformly generates CoM angles between 0 and 180
         if DecayType == 2:
@@ -222,7 +242,6 @@ class MainWindow(QMainWindow):
 
     def ReactionCalculation(self):
         recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
-        
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot(row = 0, col = 0)
@@ -242,28 +261,13 @@ class MainWindow(QMainWindow):
     
 ############-------------------------------3----------------------------############ 
 
-    def ThresholdKineticEnergyInput(self):
-        args = ["Qvalue", "excitedState", "mTarget", "mBeam"]
-        for i in range(len(args)):
-            aux = input("Please input a " + args[i] + " (MeV):")    
-            while True:
-                try:
-                    aux = float(aux)
-                except ValueError:
-                    aux = input("Please input a " + args[i] + " (MeV):")
-                except TypeError:
-                    aux = input("Please input a " + args[i] + " (MeV):")
-                else:
-                    break
-                
-            args[i] = aux
-        return(print(ThresholdKineticEnergy(*args)))
-
     def LabAngleDistInput(self, *args): #Used for calculating the most common ejectile angle over a range of energies
         self.args = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
-        self.defaults = [1300, 2600, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
-        if self.default == 1:
-            self.args = self.defaults
+        if self.default == True:
+            config = self.config["AngleDist"]
+            for i in range(len(self.args)):
+                aux = config[self.args[i]]
+                self.args[i] = aux
         else:
             for i in range(len(self.args)):
                 aux = input("Please input a " + self.args[i] + " (MeV):")
@@ -313,9 +317,11 @@ class MainWindow(QMainWindow):
 
     def ThreeBodyDecaySimInput(self): #Going to be used to return a range of energies and momenta for the decay nucleus for a given decay energy
         self.collisionArgs = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
-        self.collisionDefaults = [800, 4000, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
-        if self.default == 1:
-            self.collisionArgs = self.collisionDefaults
+        if self.default == True:
+            config = self.config["ThreeBodyDecayCollision"]
+            for i in range(len(self.collisionArgs)):
+                aux = config[self.collisionArgs[i]]
+                self.collisionArgs[i] = aux
         else:
             print("Input an EkMin of 0 or of the same value as EkMax if you would like to run in single energy mode")
             for i in range(len(self.collisionArgs)):
@@ -334,8 +340,11 @@ class MainWindow(QMainWindow):
         ## Having two different sets of inputs  
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
         self.decayDefaults = [85661.69, 939.57, 939.57] #These are for Nb92, neutron, neutron
-        if self.default == 1:
-            self.decayArgs = self.decayDefaults
+        if self.default == True:
+            config = self.config["ThreeBodyDecayDecay"]
+            for i in range(len(self.decayArgs)):
+                aux = config[self.decayArgs[i]]
+                self.decayArgs[i] = aux
         else:
             for i in range(len(self.decayArgs)):
                 aux = input("Please input a " + self.decayArgs[i] + " (MeV):")
@@ -436,7 +445,7 @@ class MainWindow(QMainWindow):
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
         self.collisionDefaults = [2500, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
         self.decayDefaults = [85661.69, 939.57, 939.57]
-        if self.default == 1:
+        if self.default == True:
             if len(args) != 0:
                 self.collisionDefaults[6] = args[0] ##allows for MultiExcitationGenerator to parse through excitations
             self.collisionArgs = self.collisionDefaults
@@ -526,7 +535,7 @@ class MainWindow(QMainWindow):
     def MultiExcitationGenerator(self):
         self.args = ["Excitation min", "Excitation Max", "Angle of focus"]
         self.defaults = [16, 24, 150]
-        if self.default == 1:
+        if self.default == True:
             self.args=self.defaults
         else:
             for i in range(len(self.args)):
@@ -602,7 +611,7 @@ class MainWindow(QMainWindow):
 
     def BetheBlochInput(self):  
         recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile = self.TwoBodyCollisionInput()
-        if self.default == 1:
+        if self.default == True:
             self.detector = 0
         else:
             self.detector = input("Please select a detector out of " + "\n" + "1: Si" + "\n" + "2: HpGe" + "\n" + ":")##So far just these options
@@ -637,7 +646,7 @@ class MainWindow(QMainWindow):
     def Rigidity(self): ##Magnetic rigidity calculator
         args = ["BeamZ", "DecayZ"]
         defaults = [41, 41] #Both niobium
-        if self.default == 1:
+        if self.default == True:
             args = defaults
         else:
             for i in range(len(args)):
