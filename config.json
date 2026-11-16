@@ -1,16 +1,16 @@
 {
-"TwoBody": {
-  "Ek_lab": 2500,
-  "Qvalue": 5,
-  "mBeam": 86542.44,
-  "mTarget": 1876.139,
-  "mRecoil": 87479.78,
-  "mEjectile": 938.791,
-  "exRecoil": 18,
-  "exEjectile": 0,
+"TwoBody": { //Args for option 2
+  "Ek_lab": 2500, //MeV
+  "Qvalue": 5, //MeV
+  "mBeam": 86542.44, //MeV
+  "mTarget": 1876.139, //MeV
+  "mRecoil": 87479.78, //MeV
+  "mEjectile": 938.791, //MeV
+  "exRecoil": 18, //MeV
+  "exEjectile": 0, //MeV
   "DecayType": 3
   },
-"AngleDist": {
+"AngleDist": { //Args for option 3
   "EkMin": 1300,
   "EkMax": 2600,
   "Qvalue": 5,
@@ -21,7 +21,7 @@
   "exRecoil": 18,
   "exEjectile": 0
 },
-"ThreeBodyDecayCollision": {
+"ThreeBodyDecayCollision": { //Args for option 4
   "EkMin": 800,
   "EkMax": 4000,
   "Qvalue": 5,
@@ -32,10 +32,34 @@
   "exRecoil": 18,
   "exEjectile": 0
 },
-"ThreeBodyDecayDecay": {
+"ThreeBodyDecayDecay": { //Args for option 4
   "mRecoil": 85661.69,
   "mDaughter1": 939.57,
   "mDaughter2": 939.57
+},
+"EnergyVarianceCollision": { //Args for option 5
+  "Energy": 2500,
+  "Qvalue": 5,
+  "mBeam": 86542.44,
+  "mTarget": 1876.139,
+  "mRecoil": 87479.78,
+  "mEjectile": 938.791,
+  "exRecoil": 18,
+  "exEjectile": 0
+},
+"EnergyVarianceDecay":{ //Args for option 5
+  "mRecoil": 85661.69,
+  "mDaughter1": 939.57,
+  "mDaughter2": 939.57
+},
+"MultiExcitationGenerator":{ //Args for option 6
+  "Excitation min": 16,
+  "Excitation max": 24,
+  "Angle of focus": 150 //Deg
+},
+"Rigidity":{ //Args for option 9
+  "BeamZ": 41, //Z
+  "DecayZ": 41 //Z
 }
 
 }

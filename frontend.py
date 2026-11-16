@@ -4,7 +4,7 @@ import math
 import random
 import scipy
 import sys
-import json
+import commentjson as json
 from time import sleep
 
 from PyQt5.QtGui import QPixmap, QFont
@@ -65,6 +65,10 @@ class MainWindow(QMainWindow):
         self.startButton.pressed.connect(self.Run)
         self.inputLayout.addWidget(self.startButton)
         
+        self.outMessage= QLabel()
+        self.outMessage.setFixedHeight(30)
+        self.inputLayout.addWidget(self.outMessage)
+        
         self.graphButtonBackward = QPushButton(text="Prev")
         self.graphButtonBackward.pressed.connect(self.Backward)
         self.graphButtonForward = QPushButton(text="Next")
@@ -113,8 +117,10 @@ class MainWindow(QMainWindow):
     def Defaults(self, state):
         if state == Qt.Checked:
             self.default = True
+            self.outMessage.setText("")
         else:
             self.default = False
+            self.outMessage.setText("Args to be entered in the console")
     
     def MultiAngle(self, state):
         if state == Qt.Checked:
@@ -155,7 +161,7 @@ class MainWindow(QMainWindow):
         elif self.choice == "4":
             self.ThreeBodyDecaySimInput()
         elif self.choice == "5":
-            self.EnergyRangeInput()
+            self.EnergyVarianceInput()
         elif self.choice == "6":
             self.MultiExcitationGenerator()
         elif self.choice == "7":
@@ -436,20 +442,22 @@ class MainWindow(QMainWindow):
     
 ############-------------------------------5----------------------------############     
     
-    def EnergyRangeInput(self, *args): 
+    def EnergyVarianceInput(self, *args): 
 ##This will be for creating
 ##1: a set of recoil nucleus energies based on the scattering angle for a single input lab energy and 
 ##2: a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
 ##So it will be a 3 step process of energy ranges
         self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
-        self.collisionDefaults = [2500, 5, 86542.44, 1876.139, 87479.78, 938.791, 18, 0]
-        self.decayDefaults = [85661.69, 939.57, 939.57]
         if self.default == True:
-            if len(args) != 0:
-                self.collisionDefaults[6] = args[0] ##allows for MultiExcitationGenerator to parse through excitations
-            self.collisionArgs = self.collisionDefaults
-            self.decayArgs = self.decayDefaults
+            config = self.config["EnergyVarianceCollision"]
+            for i in range(len(self.collisionArgs)):
+                aux = config[self.collisionArgs[i]]
+                self.collisionArgs[i] = aux
+            config = self.config["EnergyVarianceDecay"]
+            for i in range(len(self.decayArgs)):
+                aux = config[self.decayArgs[i]]
+                self.decayArgs[i] = aux
         else:
             for i in range(len(self.collisionArgs)):
                 aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
@@ -485,9 +493,6 @@ class MainWindow(QMainWindow):
         daughterAngle = np.zeros((8, 1000, 18000))
         EMin = np.zeros((8, 18000))
         EMax = np.zeros((8, 18000))
-        self.graph = pg.GraphicsLayoutWidget()
-        self.graphicLayout.addWidget(self.graph)
-        self.plt = self.graph.addPlot(row = 0, col = 0)
         for i in range(8): ##going through 8 angles
             EDaughterLabSingle, daughterAngleSingle = ThreeBodyDecayGenerator(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mRecoil, mDaughter1, mDaughter2, True, i)
             ##multiAngle argument is set to true regardless of the state of the checkbox
@@ -501,15 +506,20 @@ class MainWindow(QMainWindow):
             minEngIndex = np.argmin(EDaughterLabSingle[:,0])
             EMin[i] = EDaughterLabSingle[minEngIndex,:] ##Im gonna be honest i think im just performing magical operations rn
             EMax[i] = EDaughterLabSingle[maxEngIndex,:]
-        lowestEnergyIndex = np.argmin(EMin[:,0])
-        largestEnergyIndex = np.argmax(EMax[:,0])
-        Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen={'color':self.colours[2], 'width':3}, name="Lowest Energy")
-        Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen={'color':self.colours[5], 'width':3}, name="Largest Energy")       
-        median = (EMin[lowestEnergyIndex] + EMax[largestEnergyIndex])/2
-        eDiffBeam = EkLab-median
-        energyDifference = EMax[largestEnergyIndex] - EMin[lowestEnergyIndex]
+            lowestEnergyIndex = np.argmin(EMin[:,0])
+            largestEnergyIndex = np.argmax(EMax[:,0])
+            median = (EMin[lowestEnergyIndex] + EMax[largestEnergyIndex])/2
+            eDiffBeam = EkLab-median
+            energyDifference = EMax[largestEnergyIndex] - EMin[lowestEnergyIndex]        
+                
+        if len(args) == 0: ##This is just to ensure it only creates its plot if calling the function outright
+            self.graph = pg.GraphicsLayoutWidget()
+            self.graphicLayout.addWidget(self.graph)
+            self.plt = self.graph.addPlot(row = 0, col = 0)
 
-        if len(args) == 0:
+            Minima = pg.PlotCurveItem(thetaEjectile*180/np.pi, EMin[lowestEnergyIndex], pen={'color':self.colours[2], 'width':3}, name="Lowest Energy")
+            Maxima =  pg.PlotCurveItem(thetaEjectile*180/np.pi, EMax[largestEnergyIndex], pen={'color':self.colours[5], 'width':3}, name="Largest Energy")       
+
             difference = pg.PlotCurveItem(thetaEjectile*180/np.pi, eDiffBeam, pen={'color':self.colours[7], 'width':3}, name="Beam energy - Median")       
             Median = pg.PlotCurveItem(thetaEjectile*180/np.pi, median, pen={'color':self.colours[10], 'width':3}, name="Median Energy")       
             
@@ -533,10 +543,13 @@ class MainWindow(QMainWindow):
 ############-------------------------------6----------------------------############ 
     
     def MultiExcitationGenerator(self):
-        self.args = ["Excitation min", "Excitation Max", "Angle of focus"]
+        self.args = ["Excitation min", "Excitation max", "Angle of focus"]
         self.defaults = [16, 24, 150]
         if self.default == True:
-            self.args=self.defaults
+            config = self.config["MultiExcitationGenerator"]
+            for i in range(len(self.args)):
+                aux = config[self.args[i]]
+                self.args[i] = aux
         else:
             for i in range(len(self.args)):
                 aux = input("Please input a " + self.args[i] + " (MeV):")
@@ -556,12 +569,12 @@ class MainWindow(QMainWindow):
         EkLab = np.zeros((len(excitationEnergies), 18000))
         energyDifference = np.zeros((len(excitationEnergies),18000))
         for i in range(len(excitationEnergies)):
-            medianSingle, eDiffBeamSingle, EkLabSingle, energyDifferenceSingle, *args = self.EnergyRangeInput(excitationEnergies[i])
+            medianSingle, eDiffBeamSingle, EkLabSingle, energyDifferenceSingle, *args = self.EnergyVarianceInput(excitationEnergies[i])
             median[i] = medianSingle
             eDiffBeam[i] = eDiffBeamSingle
             EkLab[i] = EkLabSingle
             energyDifference[i] = energyDifferenceSingle
-            self.graphicLayout.removeWidget(self.graph)
+            ##self.graphicLayout.removeWidget(self.graph)
         angleIndex = round(18000 * self.args[2]/180)
         angle = self.args[2]
         self.graph = pg.GraphicsLayoutWidget()
@@ -647,7 +660,10 @@ class MainWindow(QMainWindow):
         args = ["BeamZ", "DecayZ"]
         defaults = [41, 41] #Both niobium
         if self.default == True:
-            args = defaults
+            config = self.config["Rigidity"]
+            for i in range(len(args)):
+                aux = config[args[i]]
+                args[i] = aux
         else:
             for i in range(len(args)):
                 aux = input("Please enter a Z for " + args[i])
@@ -662,7 +678,7 @@ class MainWindow(QMainWindow):
                         break
                     args[i] = aux
         beamZ, recoilZ = args
-        median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyRangeInput()
+        median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyVarianceInput(args)
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot()
