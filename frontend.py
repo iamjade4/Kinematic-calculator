@@ -197,51 +197,56 @@ class MainWindow(QMainWindow):
 ############-------------------------------2----------------------------############# 
 
     def TwoBodyCollisionInput(self, *args): #Used for testing a single lab beam energy and generating a range of angles for both the ejectile in the collision and the recoil nucleus
-        self.args = ["Ek_lab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile", "DecayType"]
+        self.args = ["Eklab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile", "DecayType"]
         if self.default == True:
-            config = self.config["TwoBody"]
+            config = self.config
             for i in range(len(self.args)):
                 aux = config[self.args[i]]
                 self.args[i] = aux
         else:
             for i in range(len(self.args)):
-                aux = input("Please input a " + args[i] + " (MeV):")    
+                aux = input("Please input a " + self.args[i] + " (MeV):")    
                 while True:
                     try:
                         aux = float(aux)
                     except ValueError:
-                        aux = input("Please input a " + args[i] + " (MeV):")
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
                     except TypeError:
-                        aux = input("Please input a " + args[i] + " (MeV):")
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
                     else:
                         break
                 self.args[i] = aux
                 
         EkLab, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, DecayType = self.args #Giving the args names to make it easier to track them
+        if len(args) != 0:
+            DecayType = args[0]
         EkBeamCm, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) #Calling the module to obtain CoM information for the collision
         ##CoMKE only returns a single EKCM, there are no angular distributions yet
         recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, self.mEjectile, exRecoil, exEjectile, V) #Obtains the post collision particle information
         #TwoBodyCollision returns an array of energies and particles as it uniformly generates CoM angles between 0 and 180
         if DecayType == 2:
-            EkDecay, angleDecay = TwoBodyDecay(recoilEk, exRecoil, -16, thetaRecoil, mRecoil, 85661.69 , 2*939.57)
+            self.decayArgs = ["QTwoDecay", "mTwoDecayRecoil", "mTwoDecayDaughter"]
+            for i in range(len(self.decayArgs)):
+                aux = config[self.decayArgs[i]]
+                self.decayArgs[i] = aux
+            QTwoDecay, mTwoDecayRecoil, mTwoDecayDaughter = self.decayArgs
+            EkDecay, angleDecay = TwoBodyDecay(recoilEk, exRecoil, QTwoDecay, thetaRecoil, mRecoil,  mTwoDecayRecoil, mTwoDecayDaughter)
         elif DecayType == 3:
-            #fig, ax1 = plt.subplots()
-            #ax2 = ax1.twinx()
+            self.decayArgs = ["QThrDecay", "mThrDecayRecoil", "mThrDecayDaughterOne", "mThrDecayDaughterTwo"]
+            for i in range(len(self.decayArgs)):
+                aux = config[self.decayArgs[i]]
+                self.decayArgs[i] = aux
+            QThrDecay, mThrDecayRecoil, mThrDecayDaughterOne, mThrDecayDaughterTwo = self.decayArgs
             if self.multiAngle == True:
-                #colour = ["red", "blue", "orange", "fuchsia", "yellow", "black", "cyan", "purple"]
                 EkDecay = np.zeros((8, len(recoilEk)))
                 angleDecay = np.zeros((8, len(recoilEk)))
                 for i in range(8): #Loops through the three body decay over a range of 8 angles to obtain more angular data
-                    EkDecaySingle, angleDecaySingle = ThreeBodyDecay(recoilEk, exRecoil, -16, thetaRecoil, mRecoil, 85661.69 , 939.57, 939.57, self.multiAngle, i)                
-                    
-                    # ax1.plot(thetaEjectile*180/np.pi, EkDecaySingle, label=('CoM Angle = ', i*45), color=colour[i])
-
-                    # ax2.plot(thetaEjectile*180/np.pi, angleDecaySingle, label=('CoM Angle = ', i*45), color=colour[i], linestyle='dashed')
+                    EkDecaySingle, angleDecaySingle = ThreeBodyDecay(recoilEk, exRecoil, QThrDecay, thetaRecoil, mRecoil, mThrDecayRecoil, mThrDecayDaughterOne, mThrDecayDaughterTwo, self.multiAngle, i)                
                     EkDecay[i] = EkDecaySingle
                     angleDecay[i] = angleDecaySingle
             else:
                 i = 0
-                EkDecay, angleDecay = ThreeBodyDecay(recoilEk, exRecoil, -16, thetaRecoil, mRecoil, 85661.69 , 939.57, 939.57, self.multiAngle, i)
+                EkDecay, angleDecay = ThreeBodyDecay(recoilEk, exRecoil, QThrDecay, thetaRecoil, mRecoil, mThrDecayRecoil, mThrDecayDaughterOne, mThrDecayDaughterTwo, self.multiAngle, i)
         return(recoilEk, ejectileEk, vRecoil, vEjectile, EkDecay, angleDecay, thetaEjectile)
  
 ############-------------------------------2----------------------------############ 
@@ -270,7 +275,7 @@ class MainWindow(QMainWindow):
     def LabAngleDistInput(self, *args): #Used for calculating the most common ejectile angle over a range of energies
         self.args = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         if self.default == True:
-            config = self.config["AngleDist"]
+            config = self.config
             for i in range(len(self.args)):
                 aux = config[self.args[i]]
                 self.args[i] = aux
@@ -324,7 +329,7 @@ class MainWindow(QMainWindow):
     def ThreeBodyDecaySimInput(self): #Going to be used to return a range of energies and momenta for the decay nucleus for a given decay energy
         self.collisionArgs = ["EkMin", "EkMax", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
         if self.default == True:
-            config = self.config["ThreeBodyDecayCollision"]
+            config = self.config
             for i in range(len(self.collisionArgs)):
                 aux = config[self.collisionArgs[i]]
                 self.collisionArgs[i] = aux
@@ -345,9 +350,8 @@ class MainWindow(QMainWindow):
         EkMin, EkMax, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile = self.collisionArgs
         ## Having two different sets of inputs  
         self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
-        self.decayDefaults = [85661.69, 939.57, 939.57] #These are for Nb92, neutron, neutron
         if self.default == True:
-            config = self.config["ThreeBodyDecayDecay"]
+            config = self.config
             for i in range(len(self.decayArgs)):
                 aux = config[self.decayArgs[i]]
                 self.decayArgs[i] = aux
@@ -447,30 +451,29 @@ class MainWindow(QMainWindow):
 ##1: a set of recoil nucleus energies based on the scattering angle for a single input lab energy and 
 ##2: a range of decay energies based on A: CoM decay angle AND B: Energy distribution. 
 ##So it will be a 3 step process of energy ranges
-        self.collisionArgs = ["Energy", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
-        self.decayArgs = ["mRecoil", "mDaughter1", "mDaughter2"]
+        self.args = ["Eklab", "Qvalue", "mBeam", "mTarget", "mRecoil", "mEjectile", "exRecoil", "exEjectile"]
+        self.decayArgs = ["QThrDecay", "mRecoil", "mThrDecayDaughterOne", "mThrDecayDaughterTwo"]
         if self.default == True:
-            config = self.config["EnergyVarianceCollision"]
-            for i in range(len(self.collisionArgs)):
-                aux = config[self.collisionArgs[i]]
-                self.collisionArgs[i] = aux
-            config = self.config["EnergyVarianceDecay"]
+            config = self.config
+            for i in range(len(self.args)):
+                aux = config[self.args[i]]
+                self.args[i] = aux
             for i in range(len(self.decayArgs)):
                 aux = config[self.decayArgs[i]]
                 self.decayArgs[i] = aux
         else:
-            for i in range(len(self.collisionArgs)):
-                aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+            for i in range(len(self.args)):
+                aux = input("Please input a " + self.args[i] + " (MeV):")
                 while True:
                     try:
                         aux = float(aux)
                     except ValueError:
-                        aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
                     except TypeError:
-                        aux = input("Please input a " + self.collisionArgs[i] + " (MeV):")
+                        aux = input("Please input a " + self.args[i] + " (MeV):")
                     else:
                         break
-                self.collisionArgs[i] = aux
+                self.args[i] = aux
             
             for i in range(len(self.decayArgs)):
                 aux = input("Please input a " + self.decayArgs[i] + " (MeV):")
@@ -484,8 +487,8 @@ class MainWindow(QMainWindow):
                     else:
                         break
                 self.decayArgs[i] = aux
-        EkLab, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile = self.collisionArgs
-        mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
+        EkLab, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile = self.args
+        QThrDecay, mDecayRecoil, mDaughter1, mDaughter2 = self.decayArgs
         EkBeamCM, EkTargetCM, EkCM, V = CentreofMassKineticEnergy(EkLab, mBeam, mTarget) ##Initial EkCM calculation. Array size of 1
         recoilEk, ejectileEk, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle = TwoBodyCollision(EkCM, Qvalue, mBeam, mTarget, mRecoil, mEjectile, exRecoil, exEjectile, V) #List of energies from two body collision, size 18000
         ## This bit will be the weird bit
@@ -494,12 +497,12 @@ class MainWindow(QMainWindow):
         EMin = np.zeros((8, 18000))
         EMax = np.zeros((8, 18000))
         for i in range(8): ##going through 8 angles
-            EDaughterLabSingle, daughterAngleSingle = ThreeBodyDecayGenerator(recoilEk, exRecoil, Qvalue, thetaRecoil, mRecoil, mRecoil, mDaughter1, mDaughter2, True, i)
-            ##multiAngle argument is set to true regardless of the state of the checkbox
-            ##calls the generator function 8 times, which then calls the three body function 1000 times. Final output of energies will be of shape 8, 1000, 18000
-            ##The first dimension is the standard energy from initial scattering angle array
-            ##The second dimension is for the CoM decay angle
-            ##The Thirs is for a range of CoM decay energies
+            EDaughterLabSingle, daughterAngleSingle = ThreeBodyDecayGenerator(recoilEk, exRecoil, QThrDecay, thetaRecoil, mRecoil, mDecayRecoil, mDaughter1, mDaughter2, True, i)
+            ## MultiAngle argument is set to true regardless of the state of the checkbox
+            ## calls the generator function 8 times, which then calls the three body function 1000 times. Final output of energies will be of shape 8, 1000, 18000
+            ## The first dimension is the standard energy from initial scattering angle array
+            ## The second dimension is for the CoM decay angle
+            ## This is for a range of CoM decay energies
             EDaughterLab[i] = EDaughterLabSingle
             daughterAngle[i] = daughterAngleSingle
             maxEngIndex = np.argmax(EDaughterLabSingle[:,0])
@@ -546,7 +549,7 @@ class MainWindow(QMainWindow):
         self.args = ["Excitation min", "Excitation max", "Angle of focus"]
         self.defaults = [16, 24, 150]
         if self.default == True:
-            config = self.config["MultiExcitationGenerator"]
+            config = self.config
             for i in range(len(self.args)):
                 aux = config[self.args[i]]
                 self.args[i] = aux
@@ -657,16 +660,15 @@ class MainWindow(QMainWindow):
 ############-------------------------------9----------------------------############ 
 
     def Rigidity(self): ##Magnetic rigidity calculator
-        args = ["BeamZ", "DecayZ"]
-        defaults = [41, 41] #Both niobium
+        self.args = ["beamZ", "recoilZ"]
         if self.default == True:
-            config = self.config["Rigidity"]
-            for i in range(len(args)):
-                aux = config[args[i]]
-                args[i] = aux
+            config = self.config
+            for i in range(len(self.args)):
+                aux = config[self.args[i]]
+                self.args[i] = aux
         else:
-            for i in range(len(args)):
-                aux = input("Please enter a Z for " + args[i])
+            for i in range(len(self.args)):
+                aux = input("Please enter a Z for " + self.args[i])
                 while True:
                     try:
                         aux = int(aux)
@@ -676,9 +678,10 @@ class MainWindow(QMainWindow):
                         aux = input("Please input a Z:")
                     else:
                         break
-                    args[i] = aux
-        beamZ, recoilZ = args
-        median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyVarianceInput(args)
+                self.args[i] = aux
+        beamZ, recoilZ = self.args
+        median, eDiffBeam, EkLab, energyDifference, mBeam, mDecayRecoil, thetaEjectile = self.EnergyVarianceInput(self.args)
+        ##EkTwoBody, AngleTwoBody, vRecoil, vEjectile, thetaRecoil, thetaEjectile, bestLabAngle= self.TwoBodyCollisionInput(2)
         self.graph = pg.GraphicsLayoutWidget()
         self.graphicLayout.addWidget(self.graph)
         self.plt = self.graph.addPlot()
@@ -686,9 +689,14 @@ class MainWindow(QMainWindow):
         
         beamRigidity = np.sqrt(2*EkLab*mBeam)/beamZ
         recoilRigidity = np.sqrt(2*median*mDecayRecoil)/recoilZ
-        recoilRigidityPlot = pg.PlotCurveItem(thetaEjectile*180/np.pi, recoilRigidity/beamRigidity)
+        ##twoBodyRigidity = np.sqrt(2*EkTwoBody*mBeam)/recoilZ
+        recoilRigidityPlot = pg.PlotCurveItem(thetaEjectile*180/np.pi, recoilRigidity, pen={'color':self.colours[3], 'width':3})
+        ##twoBodyRigidityPlot = pg.PlotCurveItem(thetaEjectile*180/np.pi, twoBodyRigidity, pen={'color':self.colours[9], 'width':3})
+        beamRigidityPlot = pg.InfiniteLine(beamRigidity, angle=0, pen={'color':self.colours[9], 'width':3})
+        
 
         self.plt.addItem(recoilRigidityPlot)
+        self.plt.addItem(beamRigidityPlot)
         self.plt.setTitle("Ratio of rigidities between the beam and the median energy decay particle")
         self.plt.setLabel("left", "Rigidity ratio")
         self.plt.setLabel("bottom", "Ejectile angle /deg")
